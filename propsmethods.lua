@@ -97,38 +97,38 @@ local Offsets = {
     end
 }})
 
-Instance.declare({class = "Humanoid", name = "WalkToPoint", callback = {
-    get = function(self)
-        local success, result = pcall(function()
-            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
-            local vec = memory.readvector(self.Data, Offsets.Humanoid.WalkToPoint)
-            return vector.create(vec.X, vec.Y, vec.Z)
-        end)
-        if not success then warn("[WalkToPoint Get] Error:", result) return vector.create(0,0,0) end
-        return result
-    end,
-    set = function(self, value)
-        local success, err = pcall(function()
-            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+--Instance.declare({class = "Humanoid", name = "WalkToPoint", callback = {
+  --  get = function(self)
+       -- local success, result = pcall(function()
+        --    assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+          --  local vec = memory.readvector(self.Data, Offsets.Humanoid.WalkToPoint)
+         --   return vector.create(vec.X, vec.Y, vec.Z)
+      --  end)
+       -- if not success then warn("[WalkToPoint Get] Error:", result) return vector.create(0,0,0) end
+      --  return result
+  --  end,
+   -- set = function(self, value)
+      --  local success, err = pcall(function()
+          --  assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
             
             -- Handle both Roblox Vector3 and vector lib object
-            local vecToWrite = value
-            if typeof(value) == "Vector3" then
-                vecToWrite = vector.create(value.X, value.Y, value.Z)
-            elseif type(value) == "vector" then
+          --  local vecToWrite = value
+           -- if typeof(value) == "Vector3" then
+              --  vecToWrite = vector.create(value.X, value.Y, value.Z)
+           -- elseif type(value) == "vector" then
                 -- Already correct format
-            else
+          --  else
                  -- Try to treat as table if needed, or fail
                  -- If your environment strictly uses 'vector' lib objects, ensure test sends that.
                  -- The previous error was likely due to type checking logic mismatch.
                  -- We will just pass it through if it's a vector type.
-            end
+          --  end
             
-            memory.writevector(self.Data, Offsets.Humanoid.WalkToPoint, vecToWrite)
-        end)
-        if not success then warn("[WalkToPoint Set] Error:", err) end
-    end
-}})
+           -- memory.writevector(self.Data, Offsets.Humanoid.WalkToPoint, vecToWrite)
+      --  end)
+       -- if not success then warn("[WalkToPoint Set] Error:", err) end
+   -- end
+--}})
 
 Instance.declare({class = BaseParts, name = "CastShadow", callback = {
     get = function(self)
@@ -187,24 +187,24 @@ Instance.declare({class = "Camera", name = "HeadScale", callback = {
     end
 }})
 
-Instance.declare({class = "Camera", name = "FieldOfView", callback = {
-    get = function(self)
-        local success, result = pcall(function()
-            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
-            return memory.readf32(self.Data, Offsets.Camera.FieldOfView)
-        end)
-        if not success then warn("[FieldOfView Get] Error:", result) return 70 end
-        return result
-    end,
-    set = function(self, value)
-        local success, err = pcall(function()
-            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
-            assert(type(value) == "number", "Value must be a number")
-            memory.writef32(self.Data, Offsets.Camera.FieldOfView, value)
-        end)
-        if not success then warn("[FieldOfView Set] Error:", err) end
-    end
-}})
+--Instance.declare({class = "Camera", name = "FieldOfView", callback = {
+  --  get = function(self)
+    --    local success, result = pcall(function()
+        --    assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+      --      return memory.readf32(self.Data, Offsets.Camera.FieldOfView)
+      --  end)
+      --  if not success then warn("[FieldOfView Get] Error:", result) return 70 end
+      --  return result
+  --  end,
+   -- set = function(self, value)
+      --  local success, err = pcall(function()
+       --     assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+        --    assert(type(value) == "number", "Value must be a number")
+         --   memory.writef32(self.Data, Offsets.Camera.FieldOfView, value)
+      --  end)
+      --  if not success then warn("[FieldOfView Set] Error:", err) end
+  --  end
+--}})
 
     local HumanoidStates = {
         [0] = "FallingDown",
