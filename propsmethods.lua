@@ -4,6 +4,21 @@ local function hex(str)
     return tonumber(str, 16)
 end
 
+ local Offsets = {
+    Humanoid = {
+        BreakJointsOnDeath = 0x1DB,
+        WalkToPoint = 0x17C
+    },
+    BasePart = {
+        CastShadow = 0xF5,
+        Massless = 0xF7
+    },
+    Camera = {
+        HeadScale = 0x168,
+        FieldOfView = 0x160
+    }
+}
+
 local success, result = pcall(function()
     local response = game:HttpGet("https://imtheo.lol/Offsets/Offsets.json")
     assert(response, "Failed to fetch offsets")
@@ -33,23 +48,6 @@ if TheoOffsets and TheoOffsets.Offsets then
             assert(part.Data and part.Data ~= 0, "Part Data is invalid")
             return memory.readu64(part.Data, O.BasePart.Primitive)
         end)
-
-        local Offsets = {
-    Humanoid = {
-        BreakJointsOnDeath = 0x1DB,
-        WalkToPoint = 0x17C
-    },
-    BasePart = {
-        CastShadow = 0xF5,
-        Massless = 0xF7
-    },
-    Camera = {
-        HeadScale = 0x168,
-        FieldOfView = 0x160
-    }
-}
-
-        
         if success then 
             return result 
         else
