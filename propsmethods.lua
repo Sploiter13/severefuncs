@@ -4,21 +4,6 @@ local function hex(str)
     return tonumber(str, 16)
 end
 
- local Offsets = {
-    Humanoid = {
-        BreakJointsOnDeath = 0x1DB,
-        WalkToPoint = 0x17C
-    },
-    BasePart = {
-        CastShadow = 0xF5,
-        Massless = 0xF7
-    },
-    Camera = {
-        HeadScale = 0x168,
-        FieldOfView = 0x160
-    }
-}
-
 local success, result = pcall(function()
     local response = game:HttpGet("https://imtheo.lol/Offsets/Offsets.json")
     assert(response, "Failed to fetch offsets")
@@ -36,7 +21,20 @@ end
 
 if TheoOffsets and TheoOffsets.Offsets then
     local O = TheoOffsets.Offsets
-
+local Offsets = {
+    Humanoid = {
+        BreakJointsOnDeath = 0x1DB,
+        WalkToPoint = 0x17C
+    },
+    BasePart = {
+        CastShadow = 0xF5,
+        Massless = 0xF7
+    },
+    Camera = {
+        HeadScale = 0x168,
+        FieldOfView = 0x160
+    }
+}
     local function round(num, decimals)
         local mult = 10 ^ (decimals or 3)
         return math.floor(num * mult + 0.5) / mult
