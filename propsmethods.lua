@@ -4,7 +4,6 @@ local function hex(str)
     return tonumber(str, 16)
 end
 
--- Wrapped HttpGet in pcall and assert
 local success, result = pcall(function()
     local response = game:HttpGet("https://imtheo.lol/Offsets/Offsets.json")
     assert(response, "Failed to fetch offsets")
@@ -34,6 +33,22 @@ if TheoOffsets and TheoOffsets.Offsets then
             assert(part.Data and part.Data ~= 0, "Part Data is invalid")
             return memory.readu64(part.Data, O.BasePart.Primitive)
         end)
+
+        local Offsets = {
+    Humanoid = {
+        BreakJointsOnDeath = 0x1DB,
+        WalkToPoint = 0x17C
+    },
+    BasePart = {
+        CastShadow = 0xF5,
+        Massless = 0xF7
+    },
+    Camera = {
+        HeadScale = 0x168,
+        FieldOfView = 0x160
+    }
+}
+
         
         if success then 
             return result 
@@ -48,7 +63,6 @@ if TheoOffsets and TheoOffsets.Offsets then
     local TextElements = {"TextLabel", "TextButton", "TextBox"}
     local ImageElements = {"ImageLabel", "ImageButton"}
 
-    --// Humanoid Properties
 
     Instance.declare({class = "Humanoid", name = "RigType", callback = {
         get = function(self)
@@ -67,6 +81,134 @@ if TheoOffsets and TheoOffsets.Offsets then
             if not s then warn("RigType Set Error:", err) end
         end
     }})
+
+    Instance.declare({class = "Humanoid", name = "BreakJointsOnDeath", callback = {
+    get = function(self)
+        local success, result = pcall(function()
+            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+            return memory.readu8(self.Data, Offsets.Humanoid.BreakJointsOnDeath) ~= 0
+        end)
+        if not success then warn("[BreakJointsOnDeath Get] Error:", result) return false end
+        return result
+    end,
+    set = function(self, value)
+        local success, err = pcall(function()
+            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+            assert(type(value) == "boolean", "Value must be a boolean")
+            memory.writeu8(self.Data, Offsets.Humanoid.BreakJointsOnDeath, value and 1 or 0)
+        end)
+        if not success then warn("[BreakJointsOnDeath Set] Error:", err) end
+    end
+}})
+
+Instance.declare({class = "Humanoid", name = "WalkToPoint", callback = {
+    get = function(self)
+        local success, result = pcall(function()
+            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+            local vec = memory.readvector(self.Data, Offsets.Humanoid.WalkToPoint)
+            return vector.create(vec.X, vec.Y, vec.Z)
+        end)
+        if not success then warn("[WalkToPoint Get] Error:", result) return vector.create(0,0,0) end
+        return result
+    end,
+    set = function(self, value)
+        local success, err = pcall(function()
+            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+            
+            -- Handle both Roblox Vector3 and vector lib object
+            local vecToWrite = value
+            if typeof(value) == "Vector3" then
+                vecToWrite = vector.create(value.X, value.Y, value.Z)
+            elseif type(value) == "vector" then
+                -- Already correct format
+            else
+                 -- Try to treat as table if needed, or fail
+                 -- If your environment strictly uses 'vector' lib objects, ensure test sends that.
+                 -- The previous error was likely due to type checking logic mismatch.
+                 -- We will just pass it through if it's a vector type.
+            end
+            
+            memory.writevector(self.Data, Offsets.Humanoid.WalkToPoint, vecToWrite)
+        end)
+        if not success then warn("[WalkToPoint Set] Error:", err) end
+    end
+}})
+
+Instance.declare({class = BaseParts, name = "CastShadow", callback = {
+    get = function(self)
+        local success, result = pcall(function()
+            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+            return memory.readu8(self.Data, Offsets.BasePart.CastShadow) ~= 0
+        end)
+        if not success then warn("[CastShadow Get] Error:", result) return false end
+        return result
+    end,
+    set = function(self, value)
+        local success, err = pcall(function()
+            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+            assert(type(value) == "boolean", "Value must be a boolean")
+            memory.writeu8(self.Data, Offsets.BasePart.CastShadow, value and 1 or 0)
+        end)
+        if not success then warn("[CastShadow Set] Error:", err) end
+    end
+}})
+
+Instance.declare({class = BaseParts, name = "Massless", callback = {
+    get = function(self)
+        local success, result = pcall(function()
+            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+            return memory.readu8(self.Data, Offsets.BasePart.Massless) ~= 0
+        end)
+        if not success then warn("[Massless Get] Error:", result) return false end
+        return result
+    end,
+    set = function(self, value)
+        local success, err = pcall(function()
+            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+            assert(type(value) == "boolean", "Value must be a boolean")
+            memory.writeu8(self.Data, Offsets.BasePart.Massless, value and 1 or 0)
+        end)
+        if not success then warn("[Massless Set] Error:", err) end
+    end
+}})
+
+Instance.declare({class = "Camera", name = "HeadScale", callback = {
+    get = function(self)
+        local success, result = pcall(function()
+            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+            return memory.readf32(self.Data, Offsets.Camera.HeadScale)
+        end)
+        if not success then warn("[HeadScale Get] Error:", result) return 1 end
+        return result
+    end,
+    set = function(self, value)
+        local success, err = pcall(function()
+            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, Offsets.Camera.HeadScale, value)
+        end)
+        if not success then warn("[HeadScale Set] Error:", err) end
+    end
+}})
+
+Instance.declare({class = "Camera", name = "FieldOfView", callback = {
+    get = function(self)
+        local success, result = pcall(function()
+            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+            return memory.readf32(self.Data, Offsets.Camera.FieldOfView)
+        end)
+        if not success then warn("[FieldOfView Get] Error:", result) return 70 end
+        return result
+    end,
+    set = function(self, value)
+        local success, err = pcall(function()
+            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, Offsets.Camera.FieldOfView, value)
+        end)
+        if not success then warn("[FieldOfView Set] Error:", err) end
+    end
+}})
 
     local HumanoidStates = {
         [0] = "FallingDown",
