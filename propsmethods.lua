@@ -15,12 +15,19 @@ if not success then
 end
 
 local TheoOffsets
+local Camera = workspace.CurrentCamera
 if success then
     TheoOffsets = crypt.json.decode(result)
 end
 
 if TheoOffsets and TheoOffsets.Offsets then
     local O = TheoOffsets.Offsets
+    local GuiOffsets = {
+    Position    = 0x520,
+    Size        = 0x540,
+    AnchorPoint = 0x568
+}
+
 local Offsets = {
     Humanoid = {
         BreakJointsOnDeath = 0x1DB,
@@ -96,6 +103,125 @@ local Offsets = {
         if not success then warn("[BreakJointsOnDeath Set] Error:", err) end
     end
 }})
+
+local function ReadUDim2(ptr, offset)
+    local xScale = memory.readf32(ptr, offset)
+    local xOffset = memory.readi32(ptr, offset + 0x4)
+    local yScale = memory.readf32(ptr, offset + 0x8)
+    local yOffset = memory.readi32(ptr, offset + 0xC)
+    return xScale, xOffset, yScale, yOffset
+end
+
+local function ReadVector2(ptr, offset)
+    local x = memory.readf32(ptr, offset)
+    local y = memory.readf32(ptr, offset + 4)
+    return x, y
+end
+
+local GetCalculatedAbsoluteSize -- Forward declaration
+local GetCalculatedAbsolutePosition 
+
+GetCalculatedAbsoluteSize = function(instance)
+    if not instance or instance.ClassName == "ScreenGui" or instance == game then
+        local vp = Camera.ViewportSize
+        return vp.X, vp.Y
+    end
+    
+    local pW, pH = GetCalculatedAbsoluteSize(instance.Parent)
+    
+    if not instance.Data or instance.Data == 0 then return 0, 0 end
+    local sx, ox, sy, oy = ReadUDim2(instance.Data, GuiOffsets.Size)
+    
+    return (pW * sx) + ox, (pH * sy) + oy
+end
+
+GetCalculatedAbsolutePosition = function(instance)
+    if not instance or instance.ClassName == "ScreenGui" or instance == game then
+        return 0, 0
+    end
+    
+    local pX, pY = GetCalculatedAbsolutePosition(instance.Parent)
+    local pW, pH = GetCalculatedAbsoluteSize(instance.Parent)
+    
+    if not instance.Data or instance.Data == 0 then return 0, 0 end
+    local px, pox, py, poy = ReadUDim2(instance.Data, GuiOffsets.Position)
+    
+    local anchorPosX = pX + (pW * px) + pox
+    local anchorPosY = pY + (pH * py) + poy
+    
+    local myW, myH = GetCalculatedAbsoluteSize(instance)
+    local anchorX, anchorY = ReadVector2(instance.Data, GuiOffsets.AnchorPoint)
+    
+    local finalX = anchorPosX - (myW * anchorX)
+    local finalY = anchorPosY - (myH * anchorY)
+    
+    return finalX, finalY
+end
+
+local function NewUDim2(sx, ox, sy, oy)
+    return {
+        X = { Scale = sx, Offset = ox },
+        Y = { Scale = sy, Offset = oy }
+    }
+end
+
+local function NewVector2(x, y)
+    return { X = x, Y = y }
+end
+
+Instance.declare({class = GuiElements, name = "Position", callback = {
+    get = function(self)
+        local s, sx, ox, sy, oy = pcall(function()
+            if not self.Data or self.Data == 0 then return 0,0,0,0 end
+            return ReadUDim2(self.Data, GuiOffsets.Position)
+        end)
+        if not s then return NewUDim2(0,0,0,0) end
+        return NewUDim2(sx, ox, sy, oy)
+    end
+}})
+
+Instance.declare({class = GuiElements, name = "Size", callback = {
+    get = function(self)
+        local s, sx, ox, sy, oy = pcall(function()
+            if not self.Data or self.Data == 0 then return 0,0,0,0 end
+            return ReadUDim2(self.Data, GuiOffsets.Size)
+        end)
+        if not s then return NewUDim2(0,0,0,0) end
+        return NewUDim2(sx, ox, sy, oy)
+    end
+}})
+
+Instance.declare({class = GuiElements, name = "AnchorPoint", callback = {
+    get = function(self)
+        local s, x, y = pcall(function()
+            if not self.Data or self.Data == 0 then return 0,0 end
+            return ReadVector2(self.Data, GuiOffsets.AnchorPoint)
+        end)
+        if not s then return NewVector2(0,0) end
+        return NewVector2(x, y)
+    end
+}})
+
+Instance.declare({class = GuiElements, name = "AbsolutePosition", callback = {
+    get = function(self)
+        local s, x, y = pcall(function()
+            return GetCalculatedAbsolutePosition(self)
+        end)
+        if not s then return NewVector2(0,0) end
+        return NewVector2(x, y)
+    end
+}})
+
+Instance.declare({class = GuiElements, name = "AbsoluteSize", callback = {
+    get = function(self)
+        local s, w, h = pcall(function()
+            return GetCalculatedAbsoluteSize(self)
+        end)
+        if not s then return NewVector2(0,0) end
+        return NewVector2(w, h)
+    end
+}})
+
 
 --Instance.declare({class = "Humanoid", name = "WalkToPoint", callback = {
   --  get = function(self)
