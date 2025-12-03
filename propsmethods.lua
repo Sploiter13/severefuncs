@@ -1605,7 +1605,7 @@ Instance.declare({
 -- ═══════════════════════════════════════════════════════════
 -- SECTION 22: CFRAME METHODS
 -- ═══════════════════════════════════════════════════════════
-
+--all credits to tzmplar/mafia
 local function createCFrameTable(pos, right, up, look)
     return {
         Position = pos,
