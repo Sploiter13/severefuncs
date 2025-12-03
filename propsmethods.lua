@@ -214,8 +214,10 @@ Instance.declare({class = "Humanoid", name = "WalkSpeed", callback = {
             return memory.readf32(self.Data, O.Humanoid.Walkspeed)
         end,
         set = function(self, value)
-            memory.writef32(self.Data, O.Humanoid.WalkspeedCheck, value)
+            assert(self.Data and self.Data ~= 0, "Invalid Pointer")
+            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.Humanoid.Walkspeed, value)
+            memory.writef32(self.Data, O.Humanoid.WalkspeedCheck, value)
         end
     }})
 
@@ -1604,7 +1606,6 @@ Instance.declare({
 -- SECTION 22: CFRAME METHODS
 -- ═══════════════════════════════════════════════════════════
 
--- Helper: Create CFrame table from components
 local function createCFrameTable(pos, right, up, look)
     return {
         Position = pos,
@@ -1614,12 +1615,25 @@ local function createCFrameTable(pos, right, up, look)
     }
 end
 
--- Inverse
+local function isVector(v)
+    return type(v) == "vector" or (type(v) == "table" and v.X and v.Y and v.Z)
+end
+
+local function toVector(v)
+    if type(v) == "vector" then
+        return v
+    elseif type(v) == "table" and v.X and v.Y and v.Z then
+        return vector.create(v.X, v.Y, v.Z)
+    end
+    error("Invalid vector type")
+end
+
+-- CFrame:Inverse()
 Instance.declare({
     class = "CFrame",
     name = "Inverse",
     callback = {
-        Inverse = function(self)
+        method = function(self)
             local pos = self.Position
             local right = self.RightVector
             local up = self.UpVector
@@ -1642,12 +1656,12 @@ Instance.declare({
     }
 })
 
--- ToWorldSpace
+-- CFrame:ToWorldSpace()
 Instance.declare({
     class = "CFrame",
     name = "ToWorldSpace",
     callback = {
-        ToWorldSpace = function(self, cf)
+        method = function(self, cf)
             assert(cf, "CFrame argument required")
             
             local pos = self.Position
@@ -1691,24 +1705,24 @@ Instance.declare({
     }
 })
 
--- ToObjectSpace
+-- CFrame:ToObjectSpace()
 Instance.declare({
     class = "CFrame",
     name = "ToObjectSpace",
     callback = {
-        ToObjectSpace = function(self, cf)
+        method = function(self, cf)
             assert(cf, "CFrame argument required")
             return self:Inverse():ToWorldSpace(cf)
         end
     }
 })
 
--- PointToWorldSpace
+-- CFrame:PointToWorldSpace()
 Instance.declare({
     class = "CFrame",
     name = "PointToWorldSpace",
     callback = {
-        PointToWorldSpace = function(self, point)
+        method = function(self, point)
             assert(isVector(point), "Vector argument required")
             point = toVector(point)
             
@@ -1726,12 +1740,12 @@ Instance.declare({
     }
 })
 
--- PointToObjectSpace
+-- CFrame:PointToObjectSpace()
 Instance.declare({
     class = "CFrame",
     name = "PointToObjectSpace",
     callback = {
-        PointToObjectSpace = function(self, point)
+        method = function(self, point)
             assert(isVector(point), "Vector argument required")
             point = toVector(point)
             
@@ -1755,12 +1769,12 @@ Instance.declare({
     }
 })
 
--- VectorToWorldSpace
+-- CFrame:VectorToWorldSpace()
 Instance.declare({
     class = "CFrame",
     name = "VectorToWorldSpace",
     callback = {
-        VectorToWorldSpace = function(self, vec)
+        method = function(self, vec)
             assert(isVector(vec), "Vector argument required")
             vec = toVector(vec)
             
@@ -1777,12 +1791,12 @@ Instance.declare({
     }
 })
 
--- VectorToObjectSpace
+-- CFrame:VectorToObjectSpace()
 Instance.declare({
     class = "CFrame",
     name = "VectorToObjectSpace",
     callback = {
-        VectorToObjectSpace = function(self, vec)
+        method = function(self, vec)
             assert(isVector(vec), "Vector argument required")
             vec = toVector(vec)
             
@@ -1799,12 +1813,12 @@ Instance.declare({
     }
 })
 
--- GetComponents
+-- CFrame:GetComponents()
 Instance.declare({
     class = "CFrame",
     name = "GetComponents",
     callback = {
-        GetComponents = function(self)
+        method = function(self)
             local pos = self.Position
             local right = self.RightVector
             local up = self.UpVector
@@ -1818,12 +1832,12 @@ Instance.declare({
     }
 })
 
--- ToEulerAnglesXYZ
+-- CFrame:ToEulerAnglesXYZ()
 Instance.declare({
     class = "CFrame",
     name = "ToEulerAnglesXYZ",
     callback = {
-        ToEulerAnglesXYZ = function(self)
+        method = function(self)
             local right = self.RightVector
             local up = self.UpVector
             local look = self.LookVector
@@ -1851,12 +1865,12 @@ Instance.declare({
     }
 })
 
--- ToEulerAnglesYXZ
+-- CFrame:ToEulerAnglesYXZ()
 Instance.declare({
     class = "CFrame",
     name = "ToEulerAnglesYXZ",
     callback = {
-        ToEulerAnglesYXZ = function(self)
+        method = function(self)
             local right = self.RightVector
             local up = self.UpVector
             local look = self.LookVector
@@ -1884,24 +1898,24 @@ Instance.declare({
     }
 })
 
--- ToOrientation
+-- CFrame:ToOrientation()
 Instance.declare({
     class = "CFrame",
     name = "ToOrientation",
     callback = {
-        ToOrientation = function(self)
+        method = function(self)
             local x, y, z = self:ToEulerAnglesYXZ()
             return math.deg(x), math.deg(y), math.deg(z)
         end
     }
 })
 
--- ToAxisAngle
+-- CFrame:ToAxisAngle()
 Instance.declare({
     class = "CFrame",
     name = "ToAxisAngle",
     callback = {
-        ToAxisAngle = function(self)
+        method = function(self)
             local right = self.RightVector
             local up = self.UpVector
             local look = self.LookVector
@@ -1922,12 +1936,12 @@ Instance.declare({
     }
 })
 
--- Lerp
+-- CFrame:Lerp()
 Instance.declare({
     class = "CFrame",
     name = "Lerp",
     callback = {
-        Lerp = function(self, goal, alpha)
+        method = function(self, goal, alpha)
             assert(goal, "Goal CFrame required")
             assert(type(alpha) == "number", "Alpha must be a number")
             
@@ -1941,7 +1955,7 @@ Instance.declare({
                 p0.Z + (p1.Z - p0.Z) * alpha
             )
             
-            -- Slerp rotation (simplified linear interpolation)
+            -- Lerp rotation vectors
             local r0 = self.RightVector
             local r1 = goal.RightVector
             local u0 = self.UpVector
@@ -1972,12 +1986,12 @@ Instance.declare({
     }
 })
 
--- Orthonormalize
+-- CFrame:Orthonormalize()
 Instance.declare({
     class = "CFrame",
     name = "Orthonormalize",
     callback = {
-        Orthonormalize = function(self)
+        method = function(self)
             local pos = self.Position
             local right = self.RightVector
             local up = self.UpVector
@@ -2013,12 +2027,12 @@ Instance.declare({
     }
 })
 
--- FuzzyEq
+-- CFrame:FuzzyEq()
 Instance.declare({
     class = "CFrame",
     name = "FuzzyEq",
     callback = {
-        FuzzyEq = function(self, other, epsilon)
+        method = function(self, other, epsilon)
             assert(other, "Other CFrame required")
             epsilon = epsilon or 0.00001
             
@@ -2051,24 +2065,25 @@ Instance.declare({
     }
 })
 
--- AngleBetween
+-- CFrame:AngleBetween()
 Instance.declare({
     class = "CFrame",
     name = "AngleBetween",
     callback = {
-        AngleBetween = function(self, other)
+        method = function(self, other)
             assert(other, "Other CFrame required")
             
             local l0 = self.LookVector
             local l1 = other.LookVector
             
             local dot = l0.X * l1.X + l0.Y * l1.Y + l0.Z * l1.Z
-            dot = math.max(-1, math.min(1, dot)) -- Clamp to [-1, 1]
+            dot = math.max(-1, math.min(1, dot))
             
             return math.acos(dot)
         end
     }
 })
+
 
 -- ═══════════════════════════════════════════════════════════
 -- SECTION 23: MODEL METHODS
