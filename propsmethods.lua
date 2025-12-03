@@ -1,34 +1,79 @@
 --!optimize 2
 
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 1: UTILITY FUNCTIONS
+-- ═══════════════════════════════════════════════════════════
+
 local function hex(str)
     return tonumber(str, 16)
 end
 
-local success, result = pcall(function()
-    local response = game:HttpGet("https://imtheo.lol/Offsets/Offsets.json")
-    assert(response, "Failed to fetch offsets")
-    return response
-end)
-
-if not success then
-    warn("Offsets Fetch Error:", result)
+local function round(num, decimals)
+    local mult = 10 ^ (decimals or 3)
+    return math.floor(num * mult + 0.5) / mult
 end
+
+-- Type checking helpers
+local function isVector(value)
+    local t = type(value)
+    if t == "vector" then return true end
+    if typeof(value) == "Vector3" then return true end
+    return false
+end
+
+local function toVector(value)
+    if type(value) == "vector" then
+        return value
+    elseif typeof(value) == "Vector3" then
+        return vector.create(value.X, value.Y, value.Z)
+    end
+    error("Value must be a vector or Vector3")
+end
+
+local function toVector3(value)
+    if typeof(value) == "Vector3" then
+        return value
+    elseif type(value) == "vector" then
+        return Vector3.new(value.X, value.Y, value.Z)
+    end
+    error("Value must be a vector or Vector3")
+end
+
+local function isColor(value)
+    if typeof(value) == "Color3" then return true end
+    if typeof(value) == "Vector3" then return true end
+    if type(value) == "vector" then return true end
+    return false
+end
+
+local function toColorVector(value)
+    if typeof(value) == "Color3" then
+        return vector.create(value.R, value.G, value.B)
+    elseif typeof(value) == "Vector3" then
+        return vector.create(value.X, value.Y, value.Z)
+    elseif type(value) == "vector" then
+        return value
+    end
+    error("Value must be a Color3, Vector3, or vector")
+end
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 2: OFFSET FETCHING & CONFIGURATION
+-- ═════════════════════════════════════════════════════════════
 
 local TheoOffsets
 local Camera = workspace.CurrentCamera
-if success then
-    TheoOffsets = crypt.json.decode(result)
-end
 
-if TheoOffsets and TheoOffsets.Offsets then
-    local O = TheoOffsets.Offsets
-    local GuiOffsets = {
-    Position    = 0x520,
-    Size        = 0x540,
-    AnchorPoint = 0x568
-}
+local response = game:HttpGet("https://imtheo.lol/Offsets/Offsets.json")
+assert(response, "Failed to fetch offsets")
+TheoOffsets = crypt.json.decode(response)
 
-local Offsets = {
+assert(TheoOffsets and TheoOffsets.Offsets, "Invalid offset structure")
+
+local O = TheoOffsets.Offsets
+
+-- Local offsets (not in TheoOffsets yet)
+local LocalOffsets = {
     Humanoid = {
         BreakJointsOnDeath = 0x1DB,
         WalkToPoint = 0x17C
@@ -40,71 +85,35 @@ local Offsets = {
     Camera = {
         HeadScale = 0x168,
         FieldOfView = 0x160
+    },
+    Gui = {
+        Position = 0x520,
+        Size = 0x540,
+        AnchorPoint = 0x568
     }
 }
-    local function round(num, decimals)
-        local mult = 10 ^ (decimals or 3)
-        return math.floor(num * mult + 0.5) / mult
-    end
 
-    local function getPrimitive(part)
-        local success, result = pcall(function()
-            assert(part, "Part is nil")
-            assert(part.Data and part.Data ~= 0, "Part Data is invalid")
-            return memory.readu64(part.Data, O.BasePart.Primitive)
-        end)
-        if success then 
-            return result 
-        else
-            warn("getPrimitive Error:", result)
-        end
-        return nil
-    end
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 3: CLASS DEFINITIONS
+-- ═══════════════════════════════════════════════════════════
 
-    local BaseParts = {"Part", "MeshPart", "UnionOperation", "TrussPart"}
-    local GuiElements = {"Frame", "TextLabel", "TextButton", "TextBox", "ImageLabel", "ImageButton"}
-    local TextElements = {"TextLabel", "TextButton", "TextBox"}
-    local ImageElements = {"ImageLabel", "ImageButton"}
+local ClassGroups = {
+    BaseParts = {"Part", "MeshPart", "UnionOperation", "TrussPart"},
+    GuiElements = {"Frame", "TextLabel", "TextButton", "TextBox", "ImageLabel", "ImageButton", "ScrollingFrame", "ViewportFrame"},
+    TextElements = {"TextLabel", "TextButton", "TextBox"},
+    ImageElements = {"ImageLabel", "ImageButton"}
+}
 
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 4: MEMORY HELPERS
+-- ═══════════════════════════════════════════════════════════
 
-    Instance.declare({class = "Humanoid", name = "RigType", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readi32(self.Data, O.Humanoid.RigType)
-            end)
-            if s then return r else warn("RigType Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writei32(self.Data, O.Humanoid.RigType, value)
-            end)
-            if not s then warn("RigType Set Error:", err) end
-        end
-    }})
+local function getPrimitive(part)
+    assert(part and part.Data and part.Data ~= 0, "Invalid part data")
+    return memory.readu64(part.Data, O.BasePart.Primitive)
+end
 
-    Instance.declare({class = "Humanoid", name = "BreakJointsOnDeath", callback = {
-    get = function(self)
-        local success, result = pcall(function()
-            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
-            return memory.readu8(self.Data, Offsets.Humanoid.BreakJointsOnDeath) ~= 0
-        end)
-        if not success then warn("[BreakJointsOnDeath Get] Error:", result) return false end
-        return result
-    end,
-    set = function(self, value)
-        local success, err = pcall(function()
-            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
-            assert(type(value) == "boolean", "Value must be a boolean")
-            memory.writeu8(self.Data, Offsets.Humanoid.BreakJointsOnDeath, value and 1 or 0)
-        end)
-        if not success then warn("[BreakJointsOnDeath Set] Error:", err) end
-    end
-}})
-
-local function ReadUDim2(ptr, offset)
+local function readUDim2(ptr, offset)
     local xScale = memory.readf32(ptr, offset)
     local xOffset = memory.readi32(ptr, offset + 0x4)
     local yScale = memory.readf32(ptr, offset + 0x8)
@@ -112,14 +121,29 @@ local function ReadUDim2(ptr, offset)
     return xScale, xOffset, yScale, yOffset
 end
 
-local function ReadVector2(ptr, offset)
+local function readVector2(ptr, offset)
     local x = memory.readf32(ptr, offset)
     local y = memory.readf32(ptr, offset + 4)
     return x, y
 end
 
-local GetCalculatedAbsoluteSize -- Forward declaration
-local GetCalculatedAbsolutePosition 
+local function newUDim2(sx, ox, sy, oy)
+    return {
+        X = { Scale = sx, Offset = ox },
+        Y = { Scale = sy, Offset = oy }
+    }
+end
+
+local function newVector2(x, y)
+    return { X = x, Y = y }
+end
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 5: GUI CALCULATION HELPERS
+-- ═══════════════════════════════════════════════════════════
+
+local GetCalculatedAbsoluteSize
+local GetCalculatedAbsolutePosition
 
 GetCalculatedAbsoluteSize = function(instance)
     if not instance or instance.ClassName == "ScreenGui" or instance == game then
@@ -129,9 +153,11 @@ GetCalculatedAbsoluteSize = function(instance)
     
     local pW, pH = GetCalculatedAbsoluteSize(instance.Parent)
     
-    if not instance.Data or instance.Data == 0 then return 0, 0 end
-    local sx, ox, sy, oy = ReadUDim2(instance.Data, GuiOffsets.Size)
+    if not instance.Data or instance.Data == 0 then 
+        return 0, 0 
+    end
     
+    local sx, ox, sy, oy = readUDim2(instance.Data, LocalOffsets.Gui.Size)
     return (pW * sx) + ox, (pH * sy) + oy
 end
 
@@ -143,14 +169,16 @@ GetCalculatedAbsolutePosition = function(instance)
     local pX, pY = GetCalculatedAbsolutePosition(instance.Parent)
     local pW, pH = GetCalculatedAbsoluteSize(instance.Parent)
     
-    if not instance.Data or instance.Data == 0 then return 0, 0 end
-    local px, pox, py, poy = ReadUDim2(instance.Data, GuiOffsets.Position)
+    if not instance.Data or instance.Data == 0 then 
+        return 0, 0 
+    end
     
+    local px, pox, py, poy = readUDim2(instance.Data, LocalOffsets.Gui.Position)
     local anchorPosX = pX + (pW * px) + pox
     local anchorPosY = pY + (pH * py) + poy
     
     local myW, myH = GetCalculatedAbsoluteSize(instance)
-    local anchorX, anchorY = ReadVector2(instance.Data, GuiOffsets.AnchorPoint)
+    local anchorX, anchorY = readVector2(instance.Data, LocalOffsets.Gui.AnchorPoint)
     
     local finalX = anchorPosX - (myW * anchorX)
     local finalY = anchorPosY - (myH * anchorY)
@@ -158,1712 +186,1952 @@ GetCalculatedAbsolutePosition = function(instance)
     return finalX, finalY
 end
 
-local function NewUDim2(sx, ox, sy, oy)
-    return {
-        X = { Scale = sx, Offset = ox },
-        Y = { Scale = sy, Offset = oy }
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 6: HUMANOID PROPERTIES
+-- ═══════════════════════════════════════════════════════════
+
+-- RigType (0 = R6, 1 = R15)
+Instance.declare({
+    class = "Humanoid",
+    name = "RigType",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readi32(self.Data, O.Humanoid.RigType)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number (0=R6, 1=R15)")
+            memory.writei32(self.Data, O.Humanoid.RigType, value)
+        end
     }
-end
+})
 
-local function NewVector2(x, y)
-    return { X = x, Y = y }
-end
+-- WalkSpeed
+Instance.declare({class = "Humanoid", name = "WalkSpeed", callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid Pointer")
+            return memory.readf32(self.Data, O.Humanoid.Walkspeed)
+        end,
+        set = function(self, value)
+            memory.writef32(self.Data, O.Humanoid.WalkspeedCheck, value)
+            memory.writef32(self.Data, O.Humanoid.Walkspeed, value)
+        end
+    }})
 
-Instance.declare({class = GuiElements, name = "Position", callback = {
-    get = function(self)
-        local s, sx, ox, sy, oy = pcall(function()
-            if not self.Data or self.Data == 0 then return 0,0,0,0 end
-            return ReadUDim2(self.Data, GuiOffsets.Position)
-        end)
-        if not s then return NewUDim2(0,0,0,0) end
-        return NewUDim2(sx, ox, sy, oy)
-    end
-}})
-
-Instance.declare({class = GuiElements, name = "Size", callback = {
-    get = function(self)
-        local s, sx, ox, sy, oy = pcall(function()
-            if not self.Data or self.Data == 0 then return 0,0,0,0 end
-            return ReadUDim2(self.Data, GuiOffsets.Size)
-        end)
-        if not s then return NewUDim2(0,0,0,0) end
-        return NewUDim2(sx, ox, sy, oy)
-    end
-}})
-
-Instance.declare({class = GuiElements, name = "AnchorPoint", callback = {
-    get = function(self)
-        local s, x, y = pcall(function()
-            if not self.Data or self.Data == 0 then return 0,0 end
-            return ReadVector2(self.Data, GuiOffsets.AnchorPoint)
-        end)
-        if not s then return NewVector2(0,0) end
-        return NewVector2(x, y)
-    end
-}})
-
-Instance.declare({class = GuiElements, name = "AbsolutePosition", callback = {
-    get = function(self)
-        local s, x, y = pcall(function()
-            return GetCalculatedAbsolutePosition(self)
-        end)
-        if not s then return NewVector2(0,0) end
-        return NewVector2(x, y)
-    end
-}})
-
-Instance.declare({class = GuiElements, name = "AbsoluteSize", callback = {
-    get = function(self)
-        local s, w, h = pcall(function()
-            return GetCalculatedAbsoluteSize(self)
-        end)
-        if not s then return NewVector2(0,0) end
-        return NewVector2(w, h)
-    end
-}})
-
-
---Instance.declare({class = "Humanoid", name = "WalkToPoint", callback = {
-  --  get = function(self)
-       -- local success, result = pcall(function()
-        --    assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
-          --  local vec = memory.readvector(self.Data, Offsets.Humanoid.WalkToPoint)
-         --   return vector.create(vec.X, vec.Y, vec.Z)
-      --  end)
-       -- if not success then warn("[WalkToPoint Get] Error:", result) return vector.create(0,0,0) end
-      --  return result
-  --  end,
-   -- set = function(self, value)
-      --  local success, err = pcall(function()
-          --  assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
-            
-            -- Handle both Roblox Vector3 and vector lib object
-          --  local vecToWrite = value
-           -- if typeof(value) == "Vector3" then
-              --  vecToWrite = vector.create(value.X, value.Y, value.Z)
-           -- elseif type(value) == "vector" then
-                -- Already correct format
-          --  else
-                 -- Try to treat as table if needed, or fail
-                 -- If your environment strictly uses 'vector' lib objects, ensure test sends that.
-                 -- The previous error was likely due to type checking logic mismatch.
-                 -- We will just pass it through if it's a vector type.
-          --  end
-            
-           -- memory.writevector(self.Data, Offsets.Humanoid.WalkToPoint, vecToWrite)
-      --  end)
-       -- if not success then warn("[WalkToPoint Set] Error:", err) end
-   -- end
---}})
-
-Instance.declare({class = BaseParts, name = "CastShadow", callback = {
-    get = function(self)
-        local success, result = pcall(function()
-            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
-            return memory.readu8(self.Data, Offsets.BasePart.CastShadow) ~= 0
-        end)
-        if not success then warn("[CastShadow Get] Error:", result) return false end
-        return result
-    end,
-    set = function(self, value)
-        local success, err = pcall(function()
-            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
-            assert(type(value) == "boolean", "Value must be a boolean")
-            memory.writeu8(self.Data, Offsets.BasePart.CastShadow, value and 1 or 0)
-        end)
-        if not success then warn("[CastShadow Set] Error:", err) end
-    end
-}})
-
-Instance.declare({class = BaseParts, name = "Massless", callback = {
-    get = function(self)
-        local success, result = pcall(function()
-            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
-            return memory.readu8(self.Data, Offsets.BasePart.Massless) ~= 0
-        end)
-        if not success then warn("[Massless Get] Error:", result) return false end
-        return result
-    end,
-    set = function(self, value)
-        local success, err = pcall(function()
-            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
-            assert(type(value) == "boolean", "Value must be a boolean")
-            memory.writeu8(self.Data, Offsets.BasePart.Massless, value and 1 or 0)
-        end)
-        if not success then warn("[Massless Set] Error:", err) end
-    end
-}})
-
-Instance.declare({class = "Camera", name = "HeadScale", callback = {
-    get = function(self)
-        local success, result = pcall(function()
-            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
-            return memory.readf32(self.Data, Offsets.Camera.HeadScale)
-        end)
-        if not success then warn("[HeadScale Get] Error:", result) return 1 end
-        return result
-    end,
-    set = function(self, value)
-        local success, err = pcall(function()
-            assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
+-- JumpPower
+Instance.declare({
+    class = "Humanoid",
+    name = "JumpPower",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.Humanoid.JumpPower)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             assert(type(value) == "number", "Value must be a number")
-            memory.writef32(self.Data, Offsets.Camera.HeadScale, value)
-        end)
-        if not success then warn("[HeadScale Set] Error:", err) end
-    end
-}})
-
---Instance.declare({class = "Camera", name = "FieldOfView", callback = {
-  --  get = function(self)
-    --    local success, result = pcall(function()
-        --    assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
-      --      return memory.readf32(self.Data, Offsets.Camera.FieldOfView)
-      --  end)
-      --  if not success then warn("[FieldOfView Get] Error:", result) return 70 end
-      --  return result
-  --  end,
-   -- set = function(self, value)
-      --  local success, err = pcall(function()
-       --     assert(self.Data and self.Data ~= 0, "Invalid Instance Data")
-        --    assert(type(value) == "number", "Value must be a number")
-         --   memory.writef32(self.Data, Offsets.Camera.FieldOfView, value)
-      --  end)
-      --  if not success then warn("[FieldOfView Set] Error:", err) end
-  --  end
---}})
-
-    local HumanoidStates = {
-        [0] = "FallingDown",
-        [1] = "Ragdoll",
-        [2] = "GettingUp",
-        [3] = "Jumping",
-        [4] = "Swimming",
-        [5] = "Freefall",
-        [6] = "Flying",
-        [7] = "Landed",
-        [8] = "Running",
-        [10] = "RunningNoPhysics",
-        [11] = "StrafingNoPhysics",
-        [12] = "Climbing",
-        [13] = "Seated",
-        [14] = "PlatformStanding",
-        [15] = "Dead",
-        [16] = "Physics",
-        [18] = "None"
+            memory.writef32(self.Data, O.Humanoid.JumpPower, value)
+        end
     }
+})
 
-   
-    local HumanoidStateNames = {}
-    for id, name in pairs(HumanoidStates) do
-        HumanoidStateNames[name] = id
-    end
+-- JumpHeight
+Instance.declare({
+    class = "Humanoid",
+    name = "JumpHeight",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.Humanoid.JumpHeight)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.Humanoid.JumpHeight, value)
+        end
+    }
+})
 
-        Instance.declare({class = "Humanoid", name = "HumanoidStateType", callback = {
-            get = function(self)
-                local s, r = pcall(function()
-                    assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                    
-                   
-                    local statePtr = memory.readu64(self.Data, O.Humanoid.HumanoidState)
-                    
-                   
-                    if statePtr and statePtr ~= 0 then
-                        local id = memory.readi32(statePtr, O.Humanoid.HumanoidStateID)
-                       
-                        return HumanoidStates[id] or id 
-                    end
-                    return "None"
-                end)
-                
-                if s then 
-                    return r 
-                else 
-                    warn("Humanoid State Get Error:", r) 
-                    return "None" 
-                end
-            end,
+-- HipHeight
+Instance.declare({
+    class = "Humanoid",
+    name = "HipHeight",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.Humanoid.HipHeight)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.Humanoid.HipHeight, value)
+        end
+    }
+})
+
+-- MaxSlopeAngle
+Instance.declare({
+    class = "Humanoid",
+    name = "MaxSlopeAngle",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.Humanoid.MaxSlopeAngle)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.Humanoid.MaxSlopeAngle, value)
+        end
+    }
+})
+
+-- AutoRotate
+Instance.declare({
+    class = "Humanoid",
+    name = "AutoRotate",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readu8(self.Data, O.Humanoid.AutoRotate) == 1
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "boolean", "Value must be a boolean")
+            memory.writeu8(self.Data, O.Humanoid.AutoRotate, value and 1 or 0)
+        end
+    }
+})
+
+-- BreakJointsOnDeath
+Instance.declare({
+    class = "Humanoid",
+    name = "BreakJointsOnDeath",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readu8(self.Data, LocalOffsets.Humanoid.BreakJointsOnDeath) ~= 0
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "boolean", "Value must be a boolean")
+            memory.writeu8(self.Data, LocalOffsets.Humanoid.BreakJointsOnDeath, value and 1 or 0)
+        end
+    }
+})
+
+-- HumanoidStateType
+local HumanoidStates = {
+    [0] = "FallingDown", [1] = "Ragdoll", [2] = "GettingUp", [3] = "Jumping",
+    [4] = "Swimming", [5] = "Freefall", [6] = "Flying", [7] = "Landed",
+    [8] = "Running", [10] = "RunningNoPhysics", [11] = "StrafingNoPhysics",
+    [12] = "Climbing", [13] = "Seated", [14] = "PlatformStanding",
+    [15] = "Dead", [16] = "Physics", [18] = "None"
+}
+
+local HumanoidStateNames = {}
+for id, name in pairs(HumanoidStates) do
+    HumanoidStateNames[name] = id
+end
+
+Instance.declare({
+    class = "Humanoid",
+    name = "HumanoidStateType",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            local statePtr = memory.readu64(self.Data, O.Humanoid.HumanoidState)
             
-            set = function(self, value)
-                local s, err = pcall(function()
-                     assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                     
-                     local idToSet = value
-                     
-                     if type(value) == "string" then
-                         idToSet = HumanoidStateNames[value]
-                         assert(idToSet, "Invalid Humanoid State Name: " .. tostring(value))
-                     else
-                         assert(type(value) == "number", "Value must be a number or valid state string")
-                     end
+            if statePtr and statePtr ~= 0 then
+                local id = memory.readi32(statePtr, O.Humanoid.HumanoidStateID)
+                return HumanoidStates[id] or id
+            end
+            return "None"
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            
+            local idToSet = value
+            if type(value) == "string" then
+                idToSet = HumanoidStateNames[value]
+                assert(idToSet, "Invalid state name: " .. tostring(value))
+            else
+                assert(type(value) == "number", "Value must be a number or state string")
+            end
+            
+            local statePtr = memory.readu64(self.Data, O.Humanoid.HumanoidState)
+            if statePtr and statePtr ~= 0 then
+                memory.writei32(statePtr, O.Humanoid.HumanoidStateID, idToSet)
+            else
+                warn("[HumanoidStateType] State pointer is nil")
+            end
+        end
+    }
+})
 
-                     local statePtr = memory.readu64(self.Data, O.Humanoid.HumanoidState)
-                                
-                     if statePtr and statePtr ~= 0 then
-                         memory.writei32(statePtr, O.Humanoid.HumanoidStateID, idToSet)
-                     else
-                         warn("Humanoid State Set Failed: State Pointer is nil")
-                     end
-                end)
-                
-                if not s then 
-                    warn("Humanoid State Set Error:", err) 
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 7: BASEPART PROPERTIES
+-- ═══════════════════════════════════════════════════════════
+
+-- Anchored
+Instance.declare({
+    class = ClassGroups.BaseParts,
+    name = "Anchored",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            local byte = memory.readu8(self.Data, O.BasePart.PrimitiveFlags)
+            return bit32.band(byte, 2) ~= 0
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "boolean", "Value must be a boolean")
+            local byte = memory.readu8(self.Data, O.BasePart.PrimitiveFlags)
+            byte = value and bit32.bor(byte, 2) or bit32.band(byte, bit32.bnot(2))
+            memory.writeu8(self.Data, O.BasePart.PrimitiveFlags, byte)
+        end
+    }
+})
+
+-- CanTouch
+Instance.declare({
+    class = ClassGroups.BaseParts,
+    name = "CanTouch",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            local byte = memory.readu8(self.Data, O.BasePart.PrimitiveFlags)
+            return bit32.band(byte, 16) ~= 0
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "boolean", "Value must be a boolean")
+            local byte = memory.readu8(self.Data, O.BasePart.PrimitiveFlags)
+            byte = value and bit32.bor(byte, 16) or bit32.band(byte, bit32.bnot(16))
+            memory.writeu8(self.Data, O.BasePart.PrimitiveFlags, byte)
+        end
+    }
+})
+
+-- CastShadow
+Instance.declare({
+    class = ClassGroups.BaseParts,
+    name = "CastShadow",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readu8(self.Data, LocalOffsets.BasePart.CastShadow) ~= 0
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "boolean", "Value must be a boolean")
+            memory.writeu8(self.Data, LocalOffsets.BasePart.CastShadow, value and 1 or 0)
+        end
+    }
+})
+
+-- Massless
+Instance.declare({
+    class = ClassGroups.BaseParts,
+    name = "Massless",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readu8(self.Data, LocalOffsets.BasePart.Massless) ~= 0
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "boolean", "Value must be a boolean")
+            memory.writeu8(self.Data, LocalOffsets.BasePart.Massless, value and 1 or 0)
+        end
+    }
+})
+
+-- Shape
+Instance.declare({
+    class = ClassGroups.BaseParts,
+    name = "Shape",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readu8(self.Data, O.BasePart.Shape)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writeu8(self.Data, O.BasePart.Shape, value)
+        end
+    }
+})
+
+-- Material
+Instance.declare({
+    class = ClassGroups.BaseParts,
+    name = "Material",
+    callback = {
+        get = function(self)
+            local primitive = getPrimitive(self)
+            assert(primitive and primitive ~= 0, "Invalid primitive")
+            return memory.readi32(primitive, O.BasePart.Material)
+        end,
+        set = function(self, value)
+            assert(type(value) == "number", "Value must be a number")
+            local primitive = getPrimitive(self)
+            assert(primitive and primitive ~= 0, "Invalid primitive")
+            memory.writei32(primitive, O.BasePart.Material, value)
+        end
+    }
+})
+
+-- AssemblyLinearVelocity (FIXED: accepts both vector and Vector3)
+Instance.declare({
+    class = ClassGroups.BaseParts,
+    name = "AssemblyLinearVelocity",
+    callback = {
+        get = function(self)
+            local primitive = getPrimitive(self)
+            assert(primitive and primitive ~= 0, "Invalid primitive")
+            local raw = memory.readvector(primitive, O.BasePart.AssemblyLinearVelocity)
+            return vector.create(round(raw.X, 3), round(raw.Y, 3), round(raw.Z, 3))
+        end,
+        set = function(self, value)
+            assert(isVector(value), "Value must be a vector or Vector3")
+            local primitive = getPrimitive(self)
+            assert(primitive and primitive ~= 0, "Invalid primitive")
+            local vecToWrite = toVector(value)
+            memory.writevector(primitive, O.BasePart.AssemblyLinearVelocity, vecToWrite)
+        end
+    }
+})
+
+-- AssemblyAngularVelocity (FIXED: accepts both vector and Vector3)
+Instance.declare({
+    class = ClassGroups.BaseParts,
+    name = "AssemblyAngularVelocity",
+    callback = {
+        get = function(self)
+            local primitive = getPrimitive(self)
+            assert(primitive and primitive ~= 0, "Invalid primitive")
+            local raw = memory.readvector(primitive, O.BasePart.AssemblyAngularVelocity)
+            return vector.create(round(raw.X, 3), round(raw.Y, 3), round(raw.Z, 3))
+        end,
+        set = function(self, value)
+            assert(isVector(value), "Value must be a vector or Vector3")
+            local primitive = getPrimitive(self)
+            assert(primitive and primitive ~= 0, "Invalid primitive")
+            local vecToWrite = toVector(value)
+            memory.writevector(primitive, O.BasePart.AssemblyAngularVelocity, vecToWrite)
+        end
+    }
+})
+
+-- Color (FIXED: accepts Color3, Vector3, or vector)
+Instance.declare({
+    class = ClassGroups.BaseParts,
+    name = "Color",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            local raw = memory.readvector(self.Data, O.BasePart.Color)
+            return Color3.new(raw.X, raw.Y, raw.Z)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
+            local vecToWrite = toColorVector(value)
+            memory.writevector(self.Data, O.BasePart.Color, vecToWrite)
+        end
+    }
+})
+
+-- Transparency
+Instance.declare({
+    class = ClassGroups.BaseParts,
+    name = "Transparency",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.BasePart.Transparency)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.BasePart.Transparency, value)
+        end
+    }
+})
+
+-- Reflectance
+Instance.declare({
+    class = ClassGroups.BaseParts,
+    name = "Reflectance",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.BasePart.Reflectance)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.BasePart.Reflectance, value)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 8: GUI PROPERTIES
+-- ═══════════════════════════════════════════════════════════
+
+-- Position
+Instance.declare({
+    class = ClassGroups.GuiElements,
+    name = "Position",
+    callback = {
+        get = function(self)
+            if not self.Data or self.Data == 0 then return newUDim2(0, 0, 0, 0) end
+            local sx, ox, sy, oy = readUDim2(self.Data, LocalOffsets.Gui.Position)
+            return newUDim2(sx, ox, sy, oy)
+        end
+    }
+})
+
+-- Size
+Instance.declare({
+    class = ClassGroups.GuiElements,
+    name = "Size",
+    callback = {
+        get = function(self)
+            if not self.Data or self.Data == 0 then return newUDim2(0, 0, 0, 0) end
+            local sx, ox, sy, oy = readUDim2(self.Data, LocalOffsets.Gui.Size)
+            return newUDim2(sx, ox, sy, oy)
+        end
+    }
+})
+
+-- AnchorPoint
+Instance.declare({
+    class = ClassGroups.GuiElements,
+    name = "AnchorPoint",
+    callback = {
+        get = function(self)
+            if not self.Data or self.Data == 0 then return newVector2(0, 0) end
+            local x, y = readVector2(self.Data, LocalOffsets.Gui.AnchorPoint)
+            return newVector2(x, y)
+        end
+    }
+})
+
+-- AbsolutePosition
+Instance.declare({
+    class = ClassGroups.GuiElements,
+    name = "AbsolutePosition",
+    callback = {
+        get = function(self)
+            local x, y = GetCalculatedAbsolutePosition(self)
+            return newVector2(x, y)
+        end
+    }
+})
+
+-- AbsoluteSize
+Instance.declare({
+    class = ClassGroups.GuiElements,
+    name = "AbsoluteSize",
+    callback = {
+        get = function(self)
+            local w, h = GetCalculatedAbsoluteSize(self)
+            return newVector2(w, h)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 9: CAMERA PROPERTIES
+-- ═══════════════════════════════════════════════════════════
+
+-- HeadScale
+Instance.declare({
+    class = "Camera",
+    name = "HeadScale",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, LocalOffsets.Camera.HeadScale)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, LocalOffsets.Camera.HeadScale, value)
+        end
+    }
+})
+
+-- CameraType
+Instance.declare({
+    class = "Camera",
+    name = "CameraType",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readi32(self.Data, O.Camera.CameraType)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writei32(self.Data, O.Camera.CameraType, value)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 10: LIGHTING PROPERTIES (FIXED: Color support)
+-- ═══════════════════════════════════════════════════════════
+
+-- Brightness
+Instance.declare({
+    class = "Lighting",
+    name = "Brightness",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.Lighting.Brightness)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.Lighting.Brightness, value)
+        end
+    }
+})
+
+-- FogColor (FIXED: accepts Color3, Vector3, or vector)
+Instance.declare({
+    class = "Lighting",
+    name = "FogColor",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readvector(self.Data, O.Lighting.FogColor)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
+            local vecToWrite = toColorVector(value)
+            memory.writevector(self.Data, O.Lighting.FogColor, vecToWrite)
+        end
+    }
+})
+
+-- Ambient (FIXED)
+Instance.declare({
+    class = "Lighting",
+    name = "Ambient",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readvector(self.Data, O.Lighting.Ambient)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
+            local vecToWrite = toColorVector(value)
+            memory.writevector(self.Data, O.Lighting.Ambient, vecToWrite)
+        end
+    }
+})
+
+-- OutdoorAmbient (FIXED)
+Instance.declare({
+    class = "Lighting",
+    name = "OutdoorAmbient",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readvector(self.Data, O.Lighting.OutdoorAmbient)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
+            local vecToWrite = toColorVector(value)
+            memory.writevector(self.Data, O.Lighting.OutdoorAmbient, vecToWrite)
+        end
+    }
+})
+
+-- ColorShift_Top (FIXED)
+Instance.declare({
+    class = "Lighting",
+    name = "ColorShift_Top",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readvector(self.Data, O.Lighting.ColorShift_Top)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
+            local vecToWrite = toColorVector(value)
+            memory.writevector(self.Data, O.Lighting.ColorShift_Top, vecToWrite)
+        end
+    }
+})
+
+-- ColorShift_Bottom (FIXED)
+Instance.declare({
+    class = "Lighting",
+    name = "ColorShift_Bottom",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readvector(self.Data, O.Lighting.ColorShift_Bottom)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
+            local vecToWrite = toColorVector(value)
+            memory.writevector(self.Data, O.Lighting.ColorShift_Bottom, vecToWrite)
+        end
+    }
+})
+
+-- FogStart
+Instance.declare({
+    class = "Lighting",
+    name = "FogStart",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.Lighting.FogStart)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.Lighting.FogStart, value)
+        end
+    }
+})
+
+-- FogEnd
+Instance.declare({
+    class = "Lighting",
+    name = "FogEnd",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.Lighting.FogEnd)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.Lighting.FogEnd, value)
+        end
+    }
+})
+
+-- ExposureCompensation
+Instance.declare({
+    class = "Lighting",
+    name = "ExposureCompensation",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.Lighting.ExposureCompensation)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.Lighting.ExposureCompensation, value)
+        end
+    }
+})
+
+-- GeographicLatitude
+Instance.declare({
+    class = "Lighting",
+    name = "GeographicLatitude",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.Lighting.GeographicLatitude)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.Lighting.GeographicLatitude, value)
+        end
+    }
+})
+
+-- ClockTime
+Instance.declare({
+    class = "Lighting",
+    name = "ClockTime",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf64(self.Data, O.Lighting.TimeOfDay) / 3600
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef64(self.Data, O.Lighting.TimeOfDay, value * 3600)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 11: PLAYER PROPERTIES
+-- ═══════════════════════════════════════════════════════════
+
+-- Country
+Instance.declare({
+    class = "Player",
+    name = "Country",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readstring(self.Data, O.Player.Country)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "string", "Value must be a string")
+            memory.writestring(self.Data, O.Player.Country, value)
+        end
+    }
+})
+
+-- CameraMaxZoomDistance
+Instance.declare({
+    class = "Player",
+    name = "CameraMaxZoomDistance",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.Player.MaxZoomDistance)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.Player.MaxZoomDistance, value)
+        end
+    }
+})
+
+-- CameraMinZoomDistance
+Instance.declare({
+    class = "Player",
+    name = "CameraMinZoomDistance",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.Player.MinZoomDistance)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.Player.MinZoomDistance, value)
+        end
+    }
+})
+
+-- CameraMode
+Instance.declare({
+    class = "Player",
+    name = "CameraMode",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readi32(self.Data, O.Player.CameraMode)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writei32(self.Data, O.Player.CameraMode, value)
+        end
+    }
+})
+
+-- Gender
+Instance.declare({
+    class = "Player",
+    name = "Gender",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readi32(self.Data, O.Player.Gender)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writei32(self.Data, O.Player.Gender, value)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 12: WORKSPACE PROPERTIES
+-- ═══════════════════════════════════════════════════════════
+
+-- Gravity
+Instance.declare({
+    class = "Workspace",
+    name = "Gravity",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.Workspace.Gravity)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.Workspace.Gravity, value)
+        end
+    }
+})
+
+-- DistributedGameTime
+Instance.declare({
+    class = "Workspace",
+    name = "DistributedGameTime",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf64(self.Data, O.Workspace.DistributedGameTime)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 13: MODEL PROPERTIES
+-- ═══════════════════════════════════════════════════════════
+
+-- Scale
+Instance.declare({
+    class = "Model",
+    name = "Scale",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.Model.Scale)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.Model.Scale, value)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 14: MESHPART PROPERTIES
+-- ═══════════════════════════════════════════════════════════
+
+-- MeshId
+Instance.declare({
+    class = "MeshPart",
+    name = "MeshId",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readstring(self.Data, O.MeshPart.MeshID)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "string", "Value must be a string")
+            memory.writestring(self.Data, O.MeshPart.MeshID, value)
+        end
+    }
+})
+
+-- TextureID
+Instance.declare({
+    class = "MeshPart",
+    name = "TextureID",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readstring(self.Data, O.MeshPart.TextureID)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "string", "Value must be a string")
+            memory.writestring(self.Data, O.MeshPart.TextureID, value)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 15: SKY PROPERTIES
+-- ═══════════════════════════════════════════════════════════
+
+-- MoonAngularSize
+Instance.declare({
+    class = "Sky",
+    name = "MoonAngularSize",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.Sky.MoonAngularSize)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.Sky.MoonAngularSize, value)
+        end
+    }
+})
+
+-- SunAngularSize
+Instance.declare({
+    class = "Sky",
+    name = "SunAngularSize",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.Sky.SunAngularSize)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.Sky.SunAngularSize, value)
+        end
+    }
+})
+
+-- StarCount
+Instance.declare({
+    class = "Sky",
+    name = "StarCount",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readi32(self.Data, O.Sky.StarCount)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writei32(self.Data, O.Sky.StarCount, value)
+        end
+    }
+})
+
+-- Skybox Textures (Bk, Dn, Ft, Lf, Rt, Up)
+local skyboxFaces = {
+    {"SkyboxBk", O.Sky.SkyboxBk},
+    {"SkyboxDn", O.Sky.SkyboxDn},
+    {"SkyboxFt", O.Sky.SkyboxFt},
+    {"SkyboxLf", O.Sky.SkyboxLf},
+    {"SkyboxRt", O.Sky.SkyboxRt},
+    {"SkyboxUp", O.Sky.SkyboxUp}
+}
+
+for _, face in ipairs(skyboxFaces) do
+    local name, offset = face[1], face[2]
+    Instance.declare({
+        class = "Sky",
+        name = name,
+        callback = {
+            get = function(self)
+                assert(self.Data and self.Data ~= 0, "Invalid pointer")
+                return memory.readstring(self.Data, offset)
+            end,
+            set = function(self, value)
+                assert(self.Data and self.Data ~= 0, "Invalid pointer")
+                assert(type(value) == "string", "Value must be a string")
+                memory.writestring(self.Data, offset, value)
+            end
+        }
+    })
+end
+
+-- SunTextureId
+Instance.declare({
+    class = "Sky",
+    name = "SunTextureId",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readstring(self.Data, O.Sky.SunTextureId)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "string", "Value must be a string")
+            memory.writestring(self.Data, O.Sky.SunTextureId, value)
+        end
+    }
+})
+
+-- MoonTextureId
+Instance.declare({
+    class = "Sky",
+    name = "MoonTextureId",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readstring(self.Data, O.Sky.MoonTextureId)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "string", "Value must be a string")
+            memory.writestring(self.Data, O.Sky.MoonTextureId, value)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 16: SPECIALMESH PROPERTIES
+-- ═══════════════════════════════════════════════════════════
+
+-- MeshId (SpecialMesh)
+Instance.declare({
+    class = "SpecialMesh",
+    name = "MeshId",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readstring(self.Data, O.SpecialMesh.MeshID)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "string", "Value must be a string")
+            memory.writestring(self.Data, O.SpecialMesh.MeshID, value)
+        end
+    }
+})
+
+-- Scale (SpecialMesh) - FIXED: accepts vector or Vector3
+Instance.declare({
+    class = "SpecialMesh",
+    name = "Scale",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readvector(self.Data, O.SpecialMesh.Scale)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(isVector(value), "Value must be a vector or Vector3")
+            local vecToWrite = toVector(value)
+            memory.writevector(self.Data, O.SpecialMesh.Scale, vecToWrite)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 17: PROXIMITYPROMT PROPERTIES
+-- ═══════════════════════════════════════════════════════════
+
+-- KeyCode
+Instance.declare({
+    class = "ProximityPrompt",
+    name = "KeyCode",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readi32(self.Data, O.ProximityPrompt.KeyCode)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writei32(self.Data, O.ProximityPrompt.KeyCode, value)
+        end
+    }
+})
+
+-- RequiresLineOfSight
+Instance.declare({
+    class = "ProximityPrompt",
+    name = "RequiresLineOfSight",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readu8(self.Data, O.ProximityPrompt.RequiresLineOfSight) ~= 0
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "boolean", "Value must be a boolean")
+            memory.writeu8(self.Data, O.ProximityPrompt.RequiresLineOfSight, value and 1 or 0)
+        end
+    }
+})
+
+-- HoldDuration
+Instance.declare({
+    class = "ProximityPrompt",
+    name = "HoldDuration",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.ProximityPrompt.HoldDuration)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.ProximityPrompt.HoldDuration, value)
+        end
+    }
+})
+
+-- MaxActivationDistance
+Instance.declare({
+    class = "ProximityPrompt",
+    name = "MaxActivationDistance",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.ProximityPrompt.MaxActivationDistance)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.ProximityPrompt.MaxActivationDistance, value)
+        end
+    }
+})
+
+-- ActionText
+Instance.declare({
+    class = "ProximityPrompt",
+    name = "ActionText",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readstring(self.Data, O.ProximityPrompt.ActionText)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "string", "Value must be a string")
+            memory.writestring(self.Data, O.ProximityPrompt.ActionText, value)
+        end
+    }
+})
+
+-- ObjectText
+Instance.declare({
+    class = "ProximityPrompt",
+    name = "ObjectText",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readstring(self.Data, O.ProximityPrompt.ObjectText)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "string", "Value must be a string")
+            memory.writestring(self.Data, O.ProximityPrompt.ObjectText, value)
+        end
+    }
+})
+
+-- Enabled (ProximityPrompt)
+Instance.declare({
+    class = "ProximityPrompt",
+    name = "Enabled",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readu8(self.Data, O.ProximityPrompt.Enabled) ~= 0
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "boolean", "Value must be a boolean")
+            memory.writeu8(self.Data, O.ProximityPrompt.Enabled, value and 1 or 0)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 18: CLICKDETECTOR PROPERTIES
+-- ═══════════════════════════════════════════════════════════
+
+-- MouseIcon
+Instance.declare({
+    class = "ClickDetector",
+    name = "MouseIcon",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readstring(self.Data, O.ClickDetector.MouseIcon)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "string", "Value must be a string")
+            memory.writestring(self.Data, O.ClickDetector.MouseIcon, value)
+        end
+    }
+})
+
+-- MaxActivationDistance (ClickDetector)
+Instance.declare({
+    class = "ClickDetector",
+    name = "MaxActivationDistance",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.ClickDetector.MaxActivationDistance)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.ClickDetector.MaxActivationDistance, value)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 19: GUIOBJECT ADDITIONAL PROPERTIES
+-- ═══════════════════════════════════════════════════════════
+
+-- BackgroundColor3 (FIXED: accepts Color3, Vector3, or vector)
+Instance.declare({
+    class = ClassGroups.GuiElements,
+    name = "BackgroundColor3",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readvector(self.Data, O.GuiObject.BackgroundColor3)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
+            local vecToWrite = toColorVector(value)
+            memory.writevector(self.Data, O.GuiObject.BackgroundColor3, vecToWrite)
+        end
+    }
+})
+
+-- BorderColor3 (FIXED)
+Instance.declare({
+    class = ClassGroups.GuiElements,
+    name = "BorderColor3",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readvector(self.Data, O.GuiObject.BorderColor3)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
+            local vecToWrite = toColorVector(value)
+            memory.writevector(self.Data, O.GuiObject.BorderColor3, vecToWrite)
+        end
+    }
+})
+
+-- Visible
+Instance.declare({
+    class = ClassGroups.GuiElements,
+    name = "Visible",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readu8(self.Data, O.GuiObject.Visible) ~= 0
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "boolean", "Value must be a boolean")
+            memory.writeu8(self.Data, O.GuiObject.Visible, value and 1 or 0)
+        end
+    }
+})
+
+-- Rotation
+Instance.declare({
+    class = ClassGroups.GuiElements,
+    name = "Rotation",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readf32(self.Data, O.GuiObject.Rotation)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.GuiObject.Rotation, value)
+        end
+    }
+})
+
+-- LayoutOrder
+Instance.declare({
+    class = ClassGroups.GuiElements,
+    name = "LayoutOrder",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readi32(self.Data, O.GuiObject.LayoutOrder)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "number", "Value must be a number")
+            memory.writei32(self.Data, O.GuiObject.LayoutOrder, value)
+        end
+    }
+})
+
+-- Text (for TextLabel, TextButton, TextBox)
+Instance.declare({
+    class = ClassGroups.TextElements,
+    name = "Text",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readstring(self.Data, O.TextLabel.Text)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "string", "Value must be a string")
+            memory.writestring(self.Data, O.TextLabel.Text, value)
+        end
+    }
+})
+
+-- TextColor3 (FIXED)
+Instance.declare({
+    class = ClassGroups.TextElements,
+    name = "TextColor3",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readvector(self.Data, O.TextLabel.TextColor3)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
+            local vecToWrite = toColorVector(value)
+            memory.writevector(self.Data, O.TextLabel.TextColor3, vecToWrite)
+        end
+    }
+})
+
+-- RichText
+Instance.declare({
+    class = ClassGroups.TextElements,
+    name = "RichText",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readu8(self.Data, O.TextLabel.RichText) ~= 0
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "boolean", "Value must be a boolean")
+            memory.writeu8(self.Data, O.TextLabel.RichText, value and 1 or 0)
+        end
+    }
+})
+
+-- Image (for ImageLabel, ImageButton)
+Instance.declare({
+    class = ClassGroups.ImageElements,
+    name = "Image",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readstring(self.Data, O.ImageLabel.Image)
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "string", "Value must be a string")
+            memory.writestring(self.Data, O.ImageLabel.Image, value)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 20: SCREENGUI PROPERTIES
+-- ═══════════════════════════════════════════════════════════
+
+-- Enabled (ScreenGui)
+Instance.declare({
+    class = "ScreenGui",
+    name = "Enabled",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readu8(self.Data, O.ScreenGui.Enabled) ~= 0
+        end,
+        set = function(self, value)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            assert(type(value) == "boolean", "Value must be a boolean")
+            memory.writeu8(self.Data, O.ScreenGui.Enabled, value and 1 or 0)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 21: DATAMODEL PROPERTIES
+-- ═══════════════════════════════════════════════════════════
+
+-- CreatorId
+Instance.declare({
+    class = "DataModel",
+    name = "CreatorId",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readi64(self.Data, O.DataModel.CreatorId)
+        end
+    }
+})
+
+-- PlaceVersion
+Instance.declare({
+    class = "DataModel",
+    name = "PlaceVersion",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readi32(self.Data, O.DataModel.PlaceVersion)
+        end
+    }
+})
+
+-- ServerIP
+Instance.declare({
+    class = "DataModel",
+    name = "ServerIP",
+    callback = {
+        get = function(self)
+            assert(self.Data and self.Data ~= 0, "Invalid pointer")
+            return memory.readstring(self.Data, O.DataModel.ServerIP)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 22: CFRAME METHODS
+-- ═══════════════════════════════════════════════════════════
+
+-- Helper: Create CFrame table from components
+local function createCFrameTable(pos, right, up, look)
+    return {
+        Position = pos,
+        RightVector = right,
+        UpVector = up,
+        LookVector = look
+    }
+end
+
+-- Inverse
+Instance.declare({
+    class = "CFrame",
+    name = "Inverse",
+    callback = {
+        Inverse = function(self)
+            local pos = self.Position
+            local right = self.RightVector
+            local up = self.UpVector
+            local look = self.LookVector
+            
+            -- Transpose rotation matrix
+            local newRight = vector.create(right.X, up.X, look.X)
+            local newUp = vector.create(right.Y, up.Y, look.Y)
+            local newLook = vector.create(right.Z, up.Z, look.Z)
+            
+            -- Transform position
+            local newPos = vector.create(
+                -vector.dot(pos, newRight),
+                -vector.dot(pos, newUp),
+                -vector.dot(pos, newLook)
+            )
+            
+            return createCFrameTable(newPos, newRight, newUp, newLook)
+        end
+    }
+})
+
+-- ToWorldSpace
+Instance.declare({
+    class = "CFrame",
+    name = "ToWorldSpace",
+    callback = {
+        ToWorldSpace = function(self, cf)
+            assert(cf, "CFrame argument required")
+            
+            local pos = self.Position
+            local right = self.RightVector
+            local up = self.UpVector
+            local look = self.LookVector
+            
+            -- Transform rotation
+            local otherRight = cf.RightVector
+            local otherUp = cf.UpVector
+            local otherLook = cf.LookVector
+            
+            local newRight = vector.create(
+                right.X * otherRight.X + up.X * otherRight.Y + look.X * otherRight.Z,
+                right.Y * otherRight.X + up.Y * otherRight.Y + look.Y * otherRight.Z,
+                right.Z * otherRight.X + up.Z * otherRight.Y + look.Z * otherRight.Z
+            )
+            
+            local newUp = vector.create(
+                right.X * otherUp.X + up.X * otherUp.Y + look.X * otherUp.Z,
+                right.Y * otherUp.X + up.Y * otherUp.Y + look.Y * otherUp.Z,
+                right.Z * otherUp.X + up.Z * otherUp.Y + look.Z * otherUp.Z
+            )
+            
+            local newLook = vector.create(
+                right.X * otherLook.X + up.X * otherLook.Y + look.X * otherLook.Z,
+                right.Y * otherLook.X + up.Y * otherLook.Y + look.Y * otherLook.Z,
+                right.Z * otherLook.X + up.Z * otherLook.Y + look.Z * otherLook.Z
+            )
+            
+            -- Transform position
+            local otherPos = cf.Position
+            local newPos = vector.create(
+                pos.X + right.X * otherPos.X + up.X * otherPos.Y + look.X * otherPos.Z,
+                pos.Y + right.Y * otherPos.X + up.Y * otherPos.Y + look.Y * otherPos.Z,
+                pos.Z + right.Z * otherPos.X + up.Z * otherPos.Y + look.Z * otherPos.Z
+            )
+            
+            return createCFrameTable(newPos, newRight, newUp, newLook)
+        end
+    }
+})
+
+-- ToObjectSpace
+Instance.declare({
+    class = "CFrame",
+    name = "ToObjectSpace",
+    callback = {
+        ToObjectSpace = function(self, cf)
+            assert(cf, "CFrame argument required")
+            return self:Inverse():ToWorldSpace(cf)
+        end
+    }
+})
+
+-- PointToWorldSpace
+Instance.declare({
+    class = "CFrame",
+    name = "PointToWorldSpace",
+    callback = {
+        PointToWorldSpace = function(self, point)
+            assert(isVector(point), "Vector argument required")
+            point = toVector(point)
+            
+            local pos = self.Position
+            local right = self.RightVector
+            local up = self.UpVector
+            local look = self.LookVector
+            
+            return vector.create(
+                pos.X + right.X * point.X + up.X * point.Y + look.X * point.Z,
+                pos.Y + right.Y * point.X + up.Y * point.Y + look.Y * point.Z,
+                pos.Z + right.Z * point.X + up.Z * point.Y + look.Z * point.Z
+            )
+        end
+    }
+})
+
+-- PointToObjectSpace
+Instance.declare({
+    class = "CFrame",
+    name = "PointToObjectSpace",
+    callback = {
+        PointToObjectSpace = function(self, point)
+            assert(isVector(point), "Vector argument required")
+            point = toVector(point)
+            
+            local pos = self.Position
+            local right = self.RightVector
+            local up = self.UpVector
+            local look = self.LookVector
+            
+            local relativePoint = vector.create(
+                point.X - pos.X,
+                point.Y - pos.Y,
+                point.Z - pos.Z
+            )
+            
+            return vector.create(
+                vector.dot(relativePoint, right),
+                vector.dot(relativePoint, up),
+                vector.dot(relativePoint, look)
+            )
+        end
+    }
+})
+
+-- VectorToWorldSpace
+Instance.declare({
+    class = "CFrame",
+    name = "VectorToWorldSpace",
+    callback = {
+        VectorToWorldSpace = function(self, vec)
+            assert(isVector(vec), "Vector argument required")
+            vec = toVector(vec)
+            
+            local right = self.RightVector
+            local up = self.UpVector
+            local look = self.LookVector
+            
+            return vector.create(
+                right.X * vec.X + up.X * vec.Y + look.X * vec.Z,
+                right.Y * vec.X + up.Y * vec.Y + look.Y * vec.Z,
+                right.Z * vec.X + up.Z * vec.Y + look.Z * vec.Z
+            )
+        end
+    }
+})
+
+-- VectorToObjectSpace
+Instance.declare({
+    class = "CFrame",
+    name = "VectorToObjectSpace",
+    callback = {
+        VectorToObjectSpace = function(self, vec)
+            assert(isVector(vec), "Vector argument required")
+            vec = toVector(vec)
+            
+            local right = self.RightVector
+            local up = self.UpVector
+            local look = self.LookVector
+            
+            return vector.create(
+                vector.dot(vec, right),
+                vector.dot(vec, up),
+                vector.dot(vec, look)
+            )
+        end
+    }
+})
+
+-- GetComponents
+Instance.declare({
+    class = "CFrame",
+    name = "GetComponents",
+    callback = {
+        GetComponents = function(self)
+            local pos = self.Position
+            local right = self.RightVector
+            local up = self.UpVector
+            local look = self.LookVector
+            
+            return pos.X, pos.Y, pos.Z,
+                   right.X, up.X, look.X,
+                   right.Y, up.Y, look.Y,
+                   right.Z, up.Z, look.Z
+        end
+    }
+})
+
+-- ToEulerAnglesXYZ
+Instance.declare({
+    class = "CFrame",
+    name = "ToEulerAnglesXYZ",
+    callback = {
+        ToEulerAnglesXYZ = function(self)
+            local right = self.RightVector
+            local up = self.UpVector
+            local look = self.LookVector
+            
+            local x, y, z
+            
+            if look.Y < 0.99999 then
+                if look.Y > -0.99999 then
+                    x = math.atan2(look.Z, math.sqrt(look.X * look.X + look.Y * look.Y))
+                    y = math.atan2(-look.X, look.Y)
+                    z = math.atan2(right.Y, up.Y)
+                else
+                    x = -math.pi / 2
+                    y = -math.atan2(right.Z, right.X)
+                    z = 0
+                end
+            else
+                x = math.pi / 2
+                y = math.atan2(right.Z, right.X)
+                z = 0
+            end
+            
+            return x, y, z
+        end
+    }
+})
+
+-- ToEulerAnglesYXZ
+Instance.declare({
+    class = "CFrame",
+    name = "ToEulerAnglesYXZ",
+    callback = {
+        ToEulerAnglesYXZ = function(self)
+            local right = self.RightVector
+            local up = self.UpVector
+            local look = self.LookVector
+            
+            local x, y, z
+            
+            if look.X < 0.99999 then
+                if look.X > -0.99999 then
+                    y = math.asin(-look.X)
+                    x = math.atan2(look.Y, look.Z)
+                    z = math.atan2(right.X, up.X)
+                else
+                    y = math.pi / 2
+                    x = -math.atan2(-right.Y, right.Z)
+                    z = 0
+                end
+            else
+                y = -math.pi / 2
+                x = math.atan2(-right.Y, right.Z)
+                z = 0
+            end
+            
+            return x, y, z
+        end
+    }
+})
+
+-- ToOrientation
+Instance.declare({
+    class = "CFrame",
+    name = "ToOrientation",
+    callback = {
+        ToOrientation = function(self)
+            local x, y, z = self:ToEulerAnglesYXZ()
+            return math.deg(x), math.deg(y), math.deg(z)
+        end
+    }
+})
+
+-- ToAxisAngle
+Instance.declare({
+    class = "CFrame",
+    name = "ToAxisAngle",
+    callback = {
+        ToAxisAngle = function(self)
+            local right = self.RightVector
+            local up = self.UpVector
+            local look = self.LookVector
+            
+            local trace = right.X + up.Y + look.Z
+            local angle = math.acos((trace - 1) / 2)
+            
+            if angle < 0.0001 then
+                return vector.create(0, 1, 0), 0
+            end
+            
+            local x = (up.Z - look.Y) / (2 * math.sin(angle))
+            local y = (look.X - right.Z) / (2 * math.sin(angle))
+            local z = (right.Y - up.X) / (2 * math.sin(angle))
+            
+            return vector.create(x, y, z), angle
+        end
+    }
+})
+
+-- Lerp
+Instance.declare({
+    class = "CFrame",
+    name = "Lerp",
+    callback = {
+        Lerp = function(self, goal, alpha)
+            assert(goal, "Goal CFrame required")
+            assert(type(alpha) == "number", "Alpha must be a number")
+            
+            local p0 = self.Position
+            local p1 = goal.Position
+            
+            -- Lerp position
+            local newPos = vector.create(
+                p0.X + (p1.X - p0.X) * alpha,
+                p0.Y + (p1.Y - p0.Y) * alpha,
+                p0.Z + (p1.Z - p0.Z) * alpha
+            )
+            
+            -- Slerp rotation (simplified linear interpolation)
+            local r0 = self.RightVector
+            local r1 = goal.RightVector
+            local u0 = self.UpVector
+            local u1 = goal.UpVector
+            local l0 = self.LookVector
+            local l1 = goal.LookVector
+            
+            local newRight = vector.create(
+                r0.X + (r1.X - r0.X) * alpha,
+                r0.Y + (r1.Y - r0.Y) * alpha,
+                r0.Z + (r1.Z - r0.Z) * alpha
+            )
+            
+            local newUp = vector.create(
+                u0.X + (u1.X - u0.X) * alpha,
+                u0.Y + (u1.Y - u0.Y) * alpha,
+                u0.Z + (u1.Z - u0.Z) * alpha
+            )
+            
+            local newLook = vector.create(
+                l0.X + (l1.X - l0.X) * alpha,
+                l0.Y + (l1.Y - l0.Y) * alpha,
+                l0.Z + (l1.Z - l0.Z) * alpha
+            )
+            
+            return createCFrameTable(newPos, newRight, newUp, newLook)
+        end
+    }
+})
+
+-- Orthonormalize
+Instance.declare({
+    class = "CFrame",
+    name = "Orthonormalize",
+    callback = {
+        Orthonormalize = function(self)
+            local pos = self.Position
+            local right = self.RightVector
+            local up = self.UpVector
+            local look = self.LookVector
+            
+            -- Normalize look vector
+            local lookMag = math.sqrt(look.X * look.X + look.Y * look.Y + look.Z * look.Z)
+            if lookMag > 0 then
+                look = vector.create(look.X / lookMag, look.Y / lookMag, look.Z / lookMag)
+            end
+            
+            -- Compute right = up × look
+            local newRight = vector.create(
+                up.Y * look.Z - up.Z * look.Y,
+                up.Z * look.X - up.X * look.Z,
+                up.X * look.Y - up.Y * look.X
+            )
+            
+            local rightMag = math.sqrt(newRight.X * newRight.X + newRight.Y * newRight.Y + newRight.Z * newRight.Z)
+            if rightMag > 0 then
+                newRight = vector.create(newRight.X / rightMag, newRight.Y / rightMag, newRight.Z / rightMag)
+            end
+            
+            -- Compute up = look × right
+            local newUp = vector.create(
+                look.Y * newRight.Z - look.Z * newRight.Y,
+                look.Z * newRight.X - look.X * newRight.Z,
+                look.X * newRight.Y - look.Y * newRight.X
+            )
+            
+            return createCFrameTable(pos, newRight, newUp, look)
+        end
+    }
+})
+
+-- FuzzyEq
+Instance.declare({
+    class = "CFrame",
+    name = "FuzzyEq",
+    callback = {
+        FuzzyEq = function(self, other, epsilon)
+            assert(other, "Other CFrame required")
+            epsilon = epsilon or 0.00001
+            
+            local p0 = self.Position
+            local p1 = other.Position
+            
+            if math.abs(p0.X - p1.X) > epsilon or
+               math.abs(p0.Y - p1.Y) > epsilon or
+               math.abs(p0.Z - p1.Z) > epsilon then
+                return false
+            end
+            
+            local r0 = self.RightVector
+            local r1 = other.RightVector
+            local u0 = self.UpVector
+            local u1 = other.UpVector
+            local l0 = self.LookVector
+            local l1 = other.LookVector
+            
+            return math.abs(r0.X - r1.X) <= epsilon and
+                   math.abs(r0.Y - r1.Y) <= epsilon and
+                   math.abs(r0.Z - r1.Z) <= epsilon and
+                   math.abs(u0.X - u1.X) <= epsilon and
+                   math.abs(u0.Y - u1.Y) <= epsilon and
+                   math.abs(u0.Z - u1.Z) <= epsilon and
+                   math.abs(l0.X - l1.X) <= epsilon and
+                   math.abs(l0.Y - l1.Y) <= epsilon and
+                   math.abs(l0.Z - l1.Z) <= epsilon
+        end
+    }
+})
+
+-- AngleBetween
+Instance.declare({
+    class = "CFrame",
+    name = "AngleBetween",
+    callback = {
+        AngleBetween = function(self, other)
+            assert(other, "Other CFrame required")
+            
+            local l0 = self.LookVector
+            local l1 = other.LookVector
+            
+            local dot = l0.X * l1.X + l0.Y * l1.Y + l0.Z * l1.Z
+            dot = math.max(-1, math.min(1, dot)) -- Clamp to [-1, 1]
+            
+            return math.acos(dot)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 23: MODEL METHODS
+-- ═══════════════════════════════════════════════════════════
+
+-- GetBoundingBox
+Instance.declare({
+    class = "Model",
+    name = "GetBoundingBox",
+    callback = {
+        GetBoundingBox = function(self)
+            local minX, minY, minZ = math.huge, math.huge, math.huge
+            local maxX, maxY, maxZ = -math.huge, -math.huge, -math.huge
+            
+            local function processDescendants(parent)
+                for _, child in ipairs(parent:GetChildren()) do
+                    if child.ClassName == "Part" or child.ClassName == "MeshPart" or child.ClassName == "UnionOperation" or child.ClassName == "TrussPart" then
+                        local pos = child.Position
+                        local size = child.Size
+                        
+                        minX = math.min(minX, pos.X - size.X / 2)
+                        minY = math.min(minY, pos.Y - size.Y / 2)
+                        minZ = math.min(minZ, pos.Z - size.Z / 2)
+                        
+                        maxX = math.max(maxX, pos.X + size.X / 2)
+                        maxY = math.max(maxY, pos.Y + size.Y / 2)
+                        maxZ = math.max(maxZ, pos.Z + size.Z / 2)
+                    end
+                    processDescendants(child)
                 end
             end
-        }})
+            
+            processDescendants(self)
+            
+            if minX == math.huge then
+                -- No parts found
+                return createCFrameTable(
+                    vector.create(0, 0, 0),
+                    vector.create(1, 0, 0),
+                    vector.create(0, 1, 0),
+                    vector.create(0, 0, 1)
+                ), vector.create(0, 0, 0)
+            end
+            
+            local centerX = (minX + maxX) / 2
+            local centerY = (minY + maxY) / 2
+            local centerZ = (minZ + maxZ) / 2
+            
+            local sizeX = maxX - minX
+            local sizeY = maxY - minY
+            local sizeZ = maxZ - minZ
+            
+            return createCFrameTable(
+                vector.create(centerX, centerY, centerZ),
+                vector.create(1, 0, 0),
+                vector.create(0, 1, 0),
+                vector.create(0, 0, 1)
+            ), vector.create(sizeX, sizeY, sizeZ)
+        end
+    }
+})
 
-    Instance.declare({class = "Humanoid", name = "WalkSpeed", callback = {
-        get = function(self)
-            local s, r = pcall(function() 
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Humanoid.Walkspeed) 
-            end)
-            if s then return r else warn("WalkSpeed Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Humanoid.WalkspeedCheck, value)
-                memory.writef32(self.Data, O.Humanoid.Walkspeed, value)
-            end)
-            if not s then warn("WalkSpeed Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Humanoid", name = "JumpPower", callback = {
-        get = function(self)
-            local s, r = pcall(function() 
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Humanoid.JumpPower) 
-            end)
-            if s then return r else warn("JumpPower Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Humanoid.JumpPower, value)
-            end)
-            if not s then warn("JumpPower Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Humanoid", name = "JumpHeight", callback = {
-        get = function(self)
-            local s, r = pcall(function() 
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Humanoid.JumpHeight) 
-            end)
-            if s then return r else warn("JumpHeight Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Humanoid.JumpHeight, value)
-            end)
-            if not s then warn("JumpHeight Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Humanoid", name = "HipHeight", callback = {
-        get = function(self)
-            local s, r = pcall(function() 
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Humanoid.HipHeight) 
-            end)
-            if s then return r else warn("HipHeight Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Humanoid.HipHeight, value)
-            end)
-            if not s then warn("HipHeight Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Humanoid", name = "MaxSlopeAngle", callback = {
-        get = function(self)
-            local s, r = pcall(function() 
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Humanoid.MaxSlopeAngle) 
-            end)
-            if s then return r else warn("MaxSlopeAngle Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Humanoid.MaxSlopeAngle, value)
-            end)
-            if not s then warn("MaxSlopeAngle Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Humanoid", name = "AutoRotate", callback = {
-        get = function(self)
-            local s, r = pcall(function() 
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readu8(self.Data, O.Humanoid.AutoRotate) == 1 
-            end)
-            if s then return r else warn("AutoRotate Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "boolean", "Value must be a boolean")
-                memory.writeu8(self.Data, O.Humanoid.AutoRotate, value and 1 or 0)
-            end)
-            if not s then warn("AutoRotate Set Error:", err) end
-        end
-    }})
-
-    --// BasePart Properties
-
-    Instance.declare({class = BaseParts, name = "Anchored", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                local byte = memory.readu8(self.Data, O.BasePart.PrimitiveFlags)
-                return bit32.band(byte, 2) ~= 0
-            end)
-            if s then return r else warn("Anchored Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "boolean", "Value must be a boolean")
-                local byte = memory.readu8(self.Data, O.BasePart.PrimitiveFlags)
-                byte = value and bit32.bor(byte, 2) or bit32.band(byte, bit32.bnot(2))
-                memory.writeu8(self.Data, O.BasePart.PrimitiveFlags, byte)
-            end)
-            if not s then warn("Anchored Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = BaseParts, name = "CanTouch", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                local byte = memory.readu8(self.Data, O.BasePart.PrimitiveFlags)
-                return bit32.band(byte, 16) ~= 0
-            end)
-            if s then return r else warn("CanTouch Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "boolean", "Value must be a boolean")
-                local byte = memory.readu8(self.Data, O.BasePart.PrimitiveFlags)
-                byte = value and bit32.bor(byte, 16) or bit32.band(byte, bit32.bnot(16))
-                memory.writeu8(self.Data, O.BasePart.PrimitiveFlags, byte)
-            end)
-            if not s then warn("CanTouch Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = BaseParts, name = "Shape", callback = {
-        get = function(self)
-            local s, r = pcall(function() 
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readu8(self.Data, O.BasePart.Shape) 
-            end)
-            if s then return r else warn("Shape Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writeu8(self.Data, O.BasePart.Shape, value)
-            end)
-            if not s then warn("Shape Set Error:", err) end
-        end
-    }})
-
-    
-     --// BasePart Physics & Material
-
-    Instance.declare({class = BaseParts, name = "AssemblyLinearVelocity", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                local primitive = getPrimitive(self)
-                assert(primitive and primitive ~= 0, "Invalid Primitive")
-                
-                local raw = memory.readvector(primitive, O.BasePart.AssemblyLinearVelocity)
-                return Vector3.new(round(raw.X, 3), round(raw.Y, 3), round(raw.Z, 3))
-            end)
-            if s then return r end
-            if not s then warn("AssemblyLinearVelocity Get Error:", r) end
-            return Vector3.new(0, 0, 0)
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(typeof(value) == "Vector3", "Value must be a Vector3")
-                local primitive = getPrimitive(self)
-                assert(primitive and primitive ~= 0, "Invalid Primitive")
-                
-                memory.writevector(primitive, O.BasePart.AssemblyLinearVelocity, value)
-            end)
-            if not s then warn("AssemblyLinearVelocity Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = BaseParts, name = "AssemblyAngularVelocity", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                local primitive = getPrimitive(self)
-                assert(primitive and primitive ~= 0, "Invalid Primitive")
-                
-                local raw = memory.readvector(primitive, O.BasePart.AssemblyAngularVelocity)
-                return Vector3.new(round(raw.X, 3), round(raw.Y, 3), round(raw.Z, 3))
-            end)
-            if s then return r end
-            if not s then warn("AssemblyAngularVelocity Get Error:", r) end
-            return Vector3.new(0, 0, 0)
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(typeof(value) == "Vector3", "Value must be a Vector3")
-                local primitive = getPrimitive(self)
-                assert(primitive and primitive ~= 0, "Invalid Primitive")
-                
-                memory.writevector(primitive, O.BasePart.AssemblyAngularVelocity, value)
-            end)
-            if not s then warn("AssemblyAngularVelocity Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = BaseParts, name = "Material", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                local primitive = getPrimitive(self)
-                assert(primitive and primitive ~= 0, "Invalid Primitive")
-                return memory.readi32(primitive, O.BasePart.Material)
-            end)
-            if s then return r end
-            if not s then warn("Material Get Error:", r) end
-            return 256 -- Default Plastic/Fabric value
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(type(value) == "number", "Value must be a number (Enum item value)")
-                local primitive = getPrimitive(self)
-                assert(primitive and primitive ~= 0, "Invalid Primitive")
-                
-                memory.writei32(primitive, O.BasePart.Material, value)
-            end)
-            if not s then warn("Material Set Error:", err) end
-        end
-    }})
-
-    --// Camera Properties
-
-    Instance.declare({class = "Camera", name = "CameraType", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readi32(self.Data, O.Camera.CameraType)
-            end)
-            if s then return r else warn("CameraType Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number (Enum item value)")
-                memory.writei32(self.Data, O.Camera.CameraType, value)
-            end)
-            if not s then warn("CameraType Set Error:", err) end
-        end
-    }})
-
-    --// Player Properties
-
-    Instance.declare({class = "Player", name = "Country", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.Player.Country)
-            end)
-            if s then return r else warn("Country Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.Player.Country, value)
-            end)
-            if not s then warn("Country Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Player", name = "CameraMaxZoomDistance", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Player.MaxZoomDistance)
-            end)
-            if s then return r else warn("CameraMaxZoomDistance Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Player.MaxZoomDistance, value)
-            end)
-            if not s then warn("CameraMaxZoomDistance Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Player", name = "CameraMinZoomDistance", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Player.MinZoomDistance)
-            end)
-            if s then return r else warn("CameraMinZoomDistance Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Player.MinZoomDistance, value)
-            end)
-            if not s then warn("CameraMinZoomDistance Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Player", name = "CameraMode", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readi32(self.Data, O.Player.CameraMode)
-            end)
-            if s then return r else warn("CameraMode Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number (Enum item value)")
-                memory.writei32(self.Data, O.Player.CameraMode, value)
-            end)
-            if not s then warn("CameraMode Set Error:", err) end
-        end
-    }})
-
-    --// Lighting Properties
-
-    Instance.declare({class = "Lighting", name = "Brightness", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Lighting.Brightness)
-            end)
-            if s then return r else warn("Brightness Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Lighting.Brightness, value)
-            end)
-            if not s then warn("Brightness Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Lighting", name = "FogStart", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Lighting.FogStart)
-            end)
-            if s then return r else warn("FogStart Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Lighting.FogStart, value)
-            end)
-            if not s then warn("FogStart Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Lighting", name = "FogEnd", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Lighting.FogEnd)
-            end)
-            if s then return r else warn("FogEnd Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Lighting.FogEnd, value)
-            end)
-            if not s then warn("FogEnd Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Lighting", name = "FogColor", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readvector(self.Data, O.Lighting.FogColor)
-            end)
-            if s then return r else warn("FogColor Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(typeof(value) == "Vector3" or typeof(value) == "Color3", "Value must be a Vector3 or Color3")
-                
-                -- If Color3, convert to Vector3 if memory.writevector expects vectors for colors
-                -- Assuming memory.readvector returns a Vector3 based on your snippet, writevector likely expects it too.
-                if typeof(value) == "Color3" then
-                     value = Vector3.new(value.R, value.G, value.B)
-                end
-                
-                memory.writevector(self.Data, O.Lighting.FogColor, value)
-            end)
-            if not s then warn("FogColor Set Error:", err) end
-        end
-    }})
-
-    
-        --// Lighting Continued
-
-    Instance.declare({class = "Lighting", name = "Ambient", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readvector(self.Data, O.Lighting.Ambient)
-            end)
-            if s then return r else warn("Ambient Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(typeof(value) == "Vector3" or typeof(value) == "Color3", "Value must be a Vector3 or Color3")
-                 if typeof(value) == "Color3" then
-                     value = Vector3.new(value.R, value.G, value.B)
-                end
-                memory.writevector(self.Data, O.Lighting.Ambient, value)
-            end)
-            if not s then warn("Ambient Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Lighting", name = "OutdoorAmbient", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readvector(self.Data, O.Lighting.OutdoorAmbient)
-            end)
-            if s then return r else warn("OutdoorAmbient Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(typeof(value) == "Vector3" or typeof(value) == "Color3", "Value must be a Vector3 or Color3")
-                 if typeof(value) == "Color3" then
-                     value = Vector3.new(value.R, value.G, value.B)
-                end
-                memory.writevector(self.Data, O.Lighting.OutdoorAmbient, value)
-            end)
-            if not s then warn("OutdoorAmbient Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Lighting", name = "ColorShift_Top", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readvector(self.Data, O.Lighting.ColorShift_Top)
-            end)
-            if s then return r else warn("ColorShift_Top Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(typeof(value) == "Vector3" or typeof(value) == "Color3", "Value must be a Vector3 or Color3")
-                 if typeof(value) == "Color3" then
-                     value = Vector3.new(value.R, value.G, value.B)
-                end
-                memory.writevector(self.Data, O.Lighting.ColorShift_Top, value)
-            end)
-            if not s then warn("ColorShift_Top Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Lighting", name = "ColorShift_Bottom", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readvector(self.Data, O.Lighting.ColorShift_Bottom)
-            end)
-            if s then return r else warn("ColorShift_Bottom Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(typeof(value) == "Vector3" or typeof(value) == "Color3", "Value must be a Vector3 or Color3")
-                 if typeof(value) == "Color3" then
-                     value = Vector3.new(value.R, value.G, value.B)
-                end
-                memory.writevector(self.Data, O.Lighting.ColorShift_Bottom, value)
-            end)
-            if not s then warn("ColorShift_Bottom Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Lighting", name = "ExposureCompensation", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Lighting.ExposureCompensation)
-            end)
-            if s then return r else warn("ExposureCompensation Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Lighting.ExposureCompensation, value)
-            end)
-            if not s then warn("ExposureCompensation Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Lighting", name = "GeographicLatitude", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Lighting.GeographicLatitude)
-            end)
-            if s then return r else warn("GeographicLatitude Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Lighting.GeographicLatitude, value)
-            end)
-            if not s then warn("GeographicLatitude Set Error:", err) end
-        end
-    }})
-
-    --// Workspace Properties
-
-    Instance.declare({class = "Workspace", name = "DistributedGameTime", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf64(self.Data, O.Workspace.DistributedGameTime)
-            end)
-            if s then return r else warn("DistributedGameTime Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef64(self.Data, O.Workspace.DistributedGameTime, value)
-            end)
-            if not s then warn("DistributedGameTime Set Error:", err) end
-        end
-    }})
-
-    --// Model Properties
-
-    Instance.declare({class = "Model", name = "Scale", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Model.Scale)
-            end)
-            if s then return r else warn("Model Scale Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Model.Scale, value)
-            end)
-            if not s then warn("Model Scale Set Error:", err) end
-        end
-    }})
-
-    --// MeshPart Properties
-
-    Instance.declare({class = "MeshPart", name = "MeshId", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.MeshPart.MeshId)
-            end)
-            if s then return r else warn("MeshId Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.MeshPart.MeshId, value)
-            end)
-            if not s then warn("MeshId Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "MeshPart", name = "TextureID", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.MeshPart.Texture)
-            end)
-            if s then return r else warn("TextureID Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.MeshPart.Texture, value)
-            end)
-            if not s then warn("TextureID Set Error:", err) end
-        end
-    }})
-
-    --// ProximityPrompt Properties
-
-    Instance.declare({class = "ProximityPrompt", name = "KeyCode", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readi32(self.Data, O.ProximityPrompt.KeyCode)
-            end)
-            if s then return r else warn("KeyCode Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number (Enum item value)")
-                memory.writei32(self.Data, O.ProximityPrompt.KeyCode, value)
-            end)
-            if not s then warn("KeyCode Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "ProximityPrompt", name = "RequiresLineOfSight", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readu8(self.Data, O.ProximityPrompt.RequiresLineOfSight) == 1
-            end)
-            if s then return r else warn("RequiresLineOfSight Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "boolean", "Value must be a boolean")
-                memory.writeu8(self.Data, O.ProximityPrompt.RequiresLineOfSight, value and 1 or 0)
-            end)
-            if not s then warn("RequiresLineOfSight Set Error:", err) end
-        end
-    }})
-
-    --// Sky Properties
-
-    Instance.declare({class = "Sky", name = "MoonAngularSize", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Sky.MoonAngularSize)
-            end)
-            if s then return r else warn("MoonAngularSize Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Sky.MoonAngularSize, value)
-            end)
-            if not s then warn("MoonAngularSize Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Sky", name = "SunAngularSize", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Sky.SunAngularSize)
-            end)
-            if s then return r else warn("SunAngularSize Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Sky.SunAngularSize, value)
-            end)
-            if not s then warn("SunAngularSize Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Sky", name = "SkyboxOrientation", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readvector(self.Data, O.Sky.SkyboxOrientation)
-            end)
-            if s then return r else warn("SkyboxOrientation Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(typeof(value) == "Vector3", "Value must be a Vector3")
-                memory.writevector(self.Data, O.Sky.SkyboxOrientation, value)
-            end)
-            if not s then warn("SkyboxOrientation Set Error:", err) end
-        end
-    }})
-
-    --// SpecialMesh Properties
-
-    Instance.declare({class = "SpecialMesh", name = "MeshId", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.SpecialMesh.MeshId)
-            end)
-            if s then return r else warn("SpecialMesh MeshId Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.SpecialMesh.MeshId, value)
-            end)
-            if not s then warn("SpecialMesh MeshId Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "SpecialMesh", name = "Scale", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readvector(self.Data, O.SpecialMesh.Scale)
-            end)
-            if s then return r else warn("SpecialMesh Scale Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(typeof(value) == "Vector3", "Value must be a Vector3")
-                memory.writevector(self.Data, O.SpecialMesh.Scale, value)
-            end)
-            if not s then warn("SpecialMesh Scale Set Error:", err) end
-        end
-    }})
-    
-    --// ClickDetector Properties
-
-    Instance.declare({class = "ClickDetector", name = "MouseIcon", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.ClickDetector.MouseIcon)
-            end)
-            if s then return r else warn("MouseIcon Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.ClickDetector.MouseIcon, value)
-            end)
-            if not s then warn("MouseIcon Set Error:", err) end
-        end
-    }})
-
-    --// GUI Properties
-
-    Instance.declare({class = GuiElements, name = "BackgroundColor3", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readvector(self.Data, O.GuiObject.BackgroundColor3)
-            end)
-            if s then return r else warn("BackgroundColor3 Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(typeof(value) == "Vector3" or typeof(value) == "Color3", "Value must be a Vector3 or Color3")
-                 if typeof(value) == "Color3" then
-                     value = Vector3.new(value.R, value.G, value.B)
-                end
-                memory.writevector(self.Data, O.GuiObject.BackgroundColor3, value)
-            end)
-            if not s then warn("BackgroundColor3 Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = GuiElements, name = "BorderColor3", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readvector(self.Data, O.GuiObject.BorderColor3)
-            end)
-            if s then return r else warn("BorderColor3 Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(typeof(value) == "Vector3" or typeof(value) == "Color3", "Value must be a Vector3 or Color3")
-                 if typeof(value) == "Color3" then
-                     value = Vector3.new(value.R, value.G, value.B)
-                end
-                memory.writevector(self.Data, O.GuiObject.BorderColor3, value)
-            end)
-            if not s then warn("BorderColor3 Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = ImageElements, name = "Image", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.GuiObject.Image)
-            end)
-            if s then return r else warn("Image Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.GuiObject.Image, value)
-            end)
-            if not s then warn("Image Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = GuiElements, name = "LayoutOrder", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readi32(self.Data, O.GuiObject.LayoutOrder)
-            end)
-            if s then return r else warn("LayoutOrder Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writei32(self.Data, O.GuiObject.LayoutOrder, value)
-            end)
-            if not s then warn("LayoutOrder Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = TextElements, name = "RichText", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readu8(self.Data, O.GuiObject.RichText) == 1
-            end)
-            if s then return r else warn("RichText Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "boolean", "Value must be a boolean")
-                memory.writeu8(self.Data, O.GuiObject.RichText, value and 1 or 0)
-            end)
-            if not s then warn("RichText Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = TextElements, name = "Text", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.GuiObject.Text)
-            end)
-            if s then return r else warn("Text Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.GuiObject.Text, value)
-            end)
-            if not s then warn("Text Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = TextElements, name = "TextColor3", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readvector(self.Data, O.GuiObject.TextColor3)
-            end)
-            if s then return r else warn("TextColor3 Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(typeof(value) == "Vector3" or typeof(value) == "Color3", "Value must be a Vector3 or Color3")
-                 if typeof(value) == "Color3" then
-                     value = Vector3.new(value.R, value.G, value.B)
-                end
-                memory.writevector(self.Data, O.GuiObject.TextColor3, value)
-            end)
-            if not s then warn("TextColor3 Set Error:", err) end
-        end
-    }})
-
-    --// AnimationTrack Properties
-
-    Instance.declare({class = "AnimationTrack", name = "IsPlaying", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readu8(self.Data, O.AnimationTrack.IsPlaying) == 1
-            end)
-            if s then return r else warn("IsPlaying Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "boolean", "Value must be a boolean")
-                memory.writeu8(self.Data, O.AnimationTrack.IsPlaying, value and 1 or 0)
-            end)
-            if not s then warn("IsPlaying Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "AnimationTrack", name = "Looped", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readu8(self.Data, O.AnimationTrack.Looped) == 1
-            end)
-            if s then return r else warn("Looped Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "boolean", "Value must be a boolean")
-                memory.writeu8(self.Data, O.AnimationTrack.Looped, value and 1 or 0)
-            end)
-            if not s then warn("Looped Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "AnimationTrack", name = "Speed", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.AnimationTrack.Speed)
-            end)
-            if s then return r else warn("Speed Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.AnimationTrack.Speed, value)
-            end)
-            if not s then warn("Speed Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Workspace", name = "Gravity", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Workspace.Gravity)
-            end)
-            if s then return r else warn("Gravity Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Workspace.Gravity, value)
-            end)
-            if not s then warn("Gravity Set Error:", err) end
-        end
-    }})
-
-    --// Humanoid Extra & BasePart Color
-
-    Instance.declare({class = "Humanoid", name = "FloorMaterial", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readi32(self.Data, O.Humanoid.FloorMaterial)
-            end)
-            if s then return r else warn("FloorMaterial Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writei32(self.Data, O.Humanoid.FloorMaterial, value)
-            end)
-            if not s then warn("FloorMaterial Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Humanoid", name = "Jump", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readu8(self.Data, O.Humanoid.Jump) == 1
-            end)
-            if s then return r else warn("Jump Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "boolean", "Value must be a boolean")
-                memory.writeu8(self.Data, O.Humanoid.Jump, value and 1 or 0)
-            end)
-            if not s then warn("Jump Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = BaseParts, name = "Color", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                local vec = memory.readvector(self.Data, O.BasePart.Color3)
-                return Color3.new(vec.X, vec.Y, vec.Z)
-            end)
-            if s then return r else warn("Color Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(typeof(value) == "Color3", "Value must be a Color3")
-                local vec = vector.create(value.R, value.G, value.B)
-                memory.writevector(self.Data, O.BasePart.Color3, vec)
-            end)
-            if not s then warn("Color Set Error:", err) end
-        end
-    }})
-
-        --// Lighting Time & Skybox Properties
-
-    Instance.declare({class = "Lighting", name = "ClockTime", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.Lighting.ClockTime)
-            end)
-            if s then return r else warn("ClockTime Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.Lighting.ClockTime, value)
-            end)
-            if not s then warn("ClockTime Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Sky", name = "SkyboxBk", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.Sky.SkyboxBk)
-            end)
-            if s then return r else warn("SkyboxBk Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.Sky.SkyboxBk, value)
-            end)
-            if not s then warn("SkyboxBk Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Sky", name = "SkyboxDn", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.Sky.SkyboxDn)
-            end)
-            if s then return r else warn("SkyboxDn Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.Sky.SkyboxDn, value)
-            end)
-            if not s then warn("SkyboxDn Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Sky", name = "SkyboxFt", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.Sky.SkyboxFt)
-            end)
-            if s then return r else warn("SkyboxFt Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.Sky.SkyboxFt, value)
-            end)
-            if not s then warn("SkyboxFt Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Sky", name = "SkyboxLf", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.Sky.SkyboxLf)
-            end)
-            if s then return r else warn("SkyboxLf Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.Sky.SkyboxLf, value)
-            end)
-            if not s then warn("SkyboxLf Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Sky", name = "SkyboxRt", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.Sky.SkyboxRt)
-            end)
-            if s then return r else warn("SkyboxRt Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.Sky.SkyboxRt, value)
-            end)
-            if not s then warn("SkyboxRt Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Sky", name = "SkyboxUp", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.Sky.SkyboxUp)
-            end)
-            if s then return r else warn("SkyboxUp Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.Sky.SkyboxUp, value)
-            end)
-            if not s then warn("SkyboxUp Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Sky", name = "SunTextureId", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.Sky.SunTextureId)
-            end)
-            if s then return r else warn("SunTextureId Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.Sky.SunTextureId, value)
-            end)
-            if not s then warn("SunTextureId Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Sky", name = "MoonTextureId", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.Sky.MoonTextureId)
-            end)
-            if s then return r else warn("MoonTextureId Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.Sky.MoonTextureId, value)
-            end)
-            if not s then warn("MoonTextureId Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Sky", name = "StarCount", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readi32(self.Data, O.Sky.StarCount)
-            end)
-            if s then return r else warn("StarCount Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writei32(self.Data, O.Sky.StarCount, value)
-            end)
-            if not s then warn("StarCount Set Error:", err) end
-        end
-    }})
-
-    --// ProximityPrompt Extras
-
-    Instance.declare({class = "ProximityPrompt", name = "HoldDuration", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.ProximityPrompt.HoldDuration)
-            end)
-            if s then return r else warn("HoldDuration Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.ProximityPrompt.HoldDuration, value)
-            end)
-            if not s then warn("HoldDuration Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "ProximityPrompt", name = "MaxActivationDistance", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.ProximityPrompt.MaxActivationDistance)
-            end)
-            if s then return r else warn("MaxActivationDistance Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.ProximityPrompt.MaxActivationDistance, value)
-            end)
-            if not s then warn("MaxActivationDistance Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "ProximityPrompt", name = "ActionText", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.ProximityPrompt.ActionText)
-            end)
-            if s then return r else warn("ActionText Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.ProximityPrompt.ActionText, value)
-            end)
-            if not s then warn("ActionText Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "ProximityPrompt", name = "ObjectText", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readstring(self.Data, O.ProximityPrompt.ObjectText)
-            end)
-            if s then return r else warn("ObjectText Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, O.ProximityPrompt.ObjectText, value)
-            end)
-            if not s then warn("ObjectText Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "ProximityPrompt", name = "Enabled", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readu8(self.Data, O.ProximityPrompt.Enabled) == 1
-            end)
-            if s then return r else warn("Enabled Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "boolean", "Value must be a boolean")
-                memory.writeu8(self.Data, O.ProximityPrompt.Enabled, value and 1 or 0)
-            end)
-            if not s then warn("Enabled Set Error:", err) end
-        end
-    }})
-
-    --// ClickDetector Distance
-
-    Instance.declare({class = "ClickDetector", name = "MaxActivationDistance", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.ClickDetector.MaxActivationDistance)
-            end)
-            if s then return r else warn("CD MaxActivationDistance Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.ClickDetector.MaxActivationDistance, value)
-            end)
-            if not s then warn("CD MaxActivationDistance Set Error:", err) end
-        end
-    }})
-
-    --// GuiObject Vis/Rot
-
-    -- Update table to match earlier definition if needed, or rely on local scope
-    local GuiElementsAll = {"Frame", "TextLabel", "TextButton", "TextBox", "ImageLabel", "ImageButton", "ScreenGui"}
-
-    Instance.declare({class = GuiElementsAll, name = "Visible", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readu8(self.Data, O.GuiObject.Visible) == 1
-            end)
-            if s then return r else warn("Visible Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "boolean", "Value must be a boolean")
-                memory.writeu8(self.Data, O.GuiObject.Visible, value and 1 or 0)
-            end)
-            if not s then warn("Visible Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = GuiElementsAll, name = "Rotation", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readf32(self.Data, O.GuiObject.Rotation)
-            end)
-            if s then return r else warn("Rotation Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "number", "Value must be a number")
-                memory.writef32(self.Data, O.GuiObject.Rotation, value)
-            end)
-            if not s then warn("Rotation Set Error:", err) end
-        end
-    }})
-
-    --// Animation Pointers
-
-    Instance.declare({class = "AnimationTrack", name = "Animation", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                local ptr = memory.readu64(self.Data, O.AnimationTrack.Animation)
-                if ptr and ptr ~= 0 then
-                    return pointer_to_userdata(ptr)
-                end
-                return nil
-            end)
-            if s then return r else warn("Animation Get Error:", r) end
-        end
-    }})
-
-end
-
-
--- NtgetOffsets Logic
-local successNt, resultNt = pcall(function()
-    local response = game:HttpGet("https://offsets.ntgetwritewatch.workers.dev/offsets.json")
-    assert(response, "Failed to fetch NtgetOffsets")
-    return response
-end)
-
-if not successNt then
-    warn("NtgetOffsets Fetch Error:", resultNt)
-end
-
-local NtgetOffsets
-if successNt then
-    NtgetOffsets = crypt.json.decode(resultNt)
-end
-
-if NtgetOffsets and NtgetOffsets.MoveDirection then
-    Instance.declare({class = "Humanoid", name = "MoveDirection", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readvector(self.Data, hex(NtgetOffsets.MoveDirection))
-            end)
-            if s then return r else warn("MoveDirection Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(typeof(value) == "Vector3", "Value must be a Vector3")
-                memory.writevector(self.Data, hex(NtgetOffsets.MoveDirection), value)
-            end)
-            if not s then warn("MoveDirection Set Error:", err) end
-        end
-    }})
-
-    Instance.declare({class = "Humanoid", name = "Sit", callback = {
-        get = function(self)
-            local s, r = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                return memory.readu8(self.Data, hex(NtgetOffsets.Sit)) == 1
-            end)
-            if s then return r else warn("Sit Get Error:", r) end
-        end,
-        set = function(self, value)
-            local s, err = pcall(function()
-                assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-                assert(type(value) == "boolean", "Value must be a boolean")
-                memory.writeu8(self.Data, hex(NtgetOffsets.Sit), value and 1 or 0)
-            end)
-            if not s then warn("Sit Set Error:", err) end
-        end
-    }})
-end
 
--- IsA Implementation
 
 local classHierarchy = {
     Instance = {},
@@ -1979,582 +2247,5 @@ registerIsA({"Handles", "ArcHandles", "ForceField", "Explosion", "LocalizationTa
 registerIsA({"DialogChoice", "NoCollisionConstraint", "Path", "PathfindingLink", "PathfindingModifier", "UIAspectRatioConstraint", "UICorner"})
 registerIsA({"UIGradient", "UIGridLayout", "UIListLayout", "UIPageLayout", "UIScale", "UISizeConstraint", "UIStroke", "UIPadding"})
 
--- GetBoundingBox Method
 
-Instance.declare({
-    class = {"Model"},
-    name = "GetBoundingBox",
-    callback = {
-        method = function(self)
-            local s, cframe, size = pcall(function()
-                assert(self, "Self is nil")
-                local parts = {}
-
-                local function collectParts(instance)
-                    -- Using the custom IsA method here internally
-                    local children = instance:GetChildren()
-                    for _, child in ipairs(children) do
-                        if child.ClassName == "Part" or child.ClassName == "MeshPart" or child.ClassName == "UnionOperation" then
-                             table.insert(parts, child)
-                        end
-                        collectParts(child)
-                    end
-                end
-
-                collectParts(self)
-
-                if #parts == 0 then
-                    return CFrame.new(0, 0, 0), Vector3.new(0, 0, 0)
-                end
-
-                local minX, minY, minZ = math.huge, math.huge, math.huge
-                local maxX, maxY, maxZ = -math.huge, -math.huge, -math.huge
-
-                for _, part in ipairs(parts) do
-                    local partCF = part.CFrame
-                    local partSize = part.Size
-                    local halfSize = Vector3.new(partSize.x / 2, partSize.y / 2, partSize.z / 2)
-
-                    local corners = {
-                        part:PointToWorldSpace(Vector3.new(-halfSize.x, -halfSize.y, -halfSize.z)),
-                        part:PointToWorldSpace(Vector3.new(-halfSize.x, -halfSize.y, halfSize.z)),
-                        part:PointToWorldSpace(Vector3.new(-halfSize.x, halfSize.y, -halfSize.z)),
-                        part:PointToWorldSpace(Vector3.new(-halfSize.x, halfSize.y, halfSize.z)),
-                        part:PointToWorldSpace(Vector3.new(halfSize.x, -halfSize.y, -halfSize.z)),
-                        part:PointToWorldSpace(Vector3.new(halfSize.x, -halfSize.y, halfSize.z)),
-                        part:PointToWorldSpace(Vector3.new(halfSize.x, halfSize.y, -halfSize.z)),
-                        part:PointToWorldSpace(Vector3.new(halfSize.x, halfSize.y, halfSize.z)),
-                    }
-
-                    for _, corner in ipairs(corners) do
-                        minX = math.min(minX, corner.x)
-                        minY = math.min(minY, corner.y)
-                        minZ = math.min(minZ, corner.z)
-                        maxX = math.max(maxX, corner.x)
-                        maxY = math.max(maxY, corner.y)
-                        maxZ = math.max(maxZ, corner.z)
-                    end
-                end
-
-                local centerX = (minX + maxX) / 2
-                local centerY = (minY + maxY) / 2
-                local centerZ = (minZ + maxZ) / 2
-                local sizeX = maxX - minX
-                local sizeY = maxY - minY
-                local sizeZ = maxZ - minZ
-
-                return CFrame.new(centerX, centerY, centerZ), Vector3.new(sizeX, sizeY, sizeZ)
-            end)
-            
-            if s then return cframe, size else warn("GetBoundingBox Error:", cframe) return CFrame.new(), Vector3.new() end
-        end
-    }
-})
-
-
-local CFrameClasses = {"Part", "MeshPart", "UnionOperation", "TrussPart", "Camera"}
-
-Instance.declare({
-    class = CFrameClasses,
-    name = "Inverse",
-    callback = {
-        method = function(self)
-            local currentCFrame = self.CFrame
-            local posX, posY, posZ = currentCFrame.Position.x, currentCFrame.Position.y, currentCFrame.Position.z
-            
-            local rightX, rightY, rightZ = currentCFrame.RightVector.x, currentCFrame.RightVector.y, currentCFrame.RightVector.z
-            local upX, upY, upZ = currentCFrame.UpVector.x, currentCFrame.UpVector.y, currentCFrame.UpVector.z
-            local lookX, lookY, lookZ = -currentCFrame.LookVector.x, -currentCFrame.LookVector.y, -currentCFrame.LookVector.z
-            
-            local transposeRightX, transposeRightY, transposeRightZ = rightX, rightY, rightZ
-            local transposeUpX, transposeUpY, transposeUpZ = upX, upY, upZ
-            local transposeLookX, transposeLookY, transposeLookZ = lookX, lookY, lookZ
-            
-            local inverseX = -(transposeRightX * posX + transposeRightY * posY + transposeRightZ * posZ)
-            local inverseY = -(transposeUpX * posX + transposeUpY * posY + transposeUpZ * posZ)
-            local inverseZ = -(transposeLookX * posX + transposeLookY * posY + transposeLookZ * posZ)
-            
-            return CFrame.new(
-                inverseX, inverseY, inverseZ,
-                transposeRightX, transposeRightY, transposeRightZ,
-                transposeUpX, transposeUpY, transposeUpZ,
-                transposeLookX, transposeLookY, transposeLookZ
-            )
-        end
-    }
-})
-
-Instance.declare({
-    class = CFrameClasses,
-    name = "ToWorldSpace",
-    callback = {
-        method = function(self, offsetCFrame)
-            local baseCFrame = self.CFrame
-            
-            local baseRightX = baseCFrame.RightVector.x
-            local baseRightY = baseCFrame.RightVector.y
-            local baseRightZ = baseCFrame.RightVector.z
-            local baseUpX = baseCFrame.UpVector.x
-            local baseUpY = baseCFrame.UpVector.y
-            local baseUpZ = baseCFrame.UpVector.z
-            local baseLookX = -baseCFrame.LookVector.x
-            local baseLookY = -baseCFrame.LookVector.y
-            local baseLookZ = -baseCFrame.LookVector.z
-            local basePosX = baseCFrame.Position.x
-            local basePosY = baseCFrame.Position.y
-            local basePosZ = baseCFrame.Position.z
-            
-            local offsetPosX = offsetCFrame.X
-            local offsetPosY = offsetCFrame.Y
-            local offsetPosZ = offsetCFrame.Z
-            local offsetRightX = offsetCFrame.R00
-            local offsetRightY = offsetCFrame.R01
-            local offsetRightZ = offsetCFrame.R02
-            local offsetUpX = offsetCFrame.R10
-            local offsetUpY = offsetCFrame.R11
-            local offsetUpZ = offsetCFrame.R12
-            local offsetLookX = offsetCFrame.R20
-            local offsetLookY = offsetCFrame.R21
-            local offsetLookZ = offsetCFrame.R22
-            
-            local resultRightX = baseRightX * offsetRightX + baseUpX * offsetUpX + baseLookX * offsetLookX
-            local resultRightY = baseRightX * offsetRightY + baseUpX * offsetUpY + baseLookX * offsetLookY
-            local resultRightZ = baseRightX * offsetRightZ + baseUpX * offsetUpZ + baseLookX * offsetLookZ
-            local resultUpX = baseRightY * offsetRightX + baseUpY * offsetUpX + baseLookY * offsetLookX
-            local resultUpY = baseRightY * offsetRightY + baseUpY * offsetUpY + baseLookY * offsetLookY
-            local resultUpZ = baseRightY * offsetRightZ + baseUpY * offsetUpZ + baseLookY * offsetLookZ
-            local resultLookX = baseRightZ * offsetRightX + baseUpZ * offsetUpX + baseLookZ * offsetLookX
-            local resultLookY = baseRightZ * offsetRightY + baseUpZ * offsetUpY + baseLookZ * offsetLookY
-            local resultLookZ = baseRightZ * offsetRightZ + baseUpZ * offsetUpZ + baseLookZ * offsetLookZ
-            
-            local resultPosX = basePosX + baseRightX * offsetPosX + baseUpX * offsetPosY + baseLookX * offsetPosZ
-            local resultPosY = basePosY + baseRightY * offsetPosX + baseUpY * offsetPosY + baseLookY * offsetPosZ
-            local resultPosZ = basePosZ + baseRightZ * offsetPosX + baseUpZ * offsetPosY + baseLookZ * offsetPosZ
-            
-            return CFrame.new(
-                resultPosX, resultPosY, resultPosZ,
-                resultRightX, resultRightY, resultRightZ,
-                resultUpX, resultUpY, resultUpZ,
-                resultLookX, resultLookY, resultLookZ
-            )
-        end
-    }
-})
-
-Instance.declare({
-    class = CFrameClasses,
-    name = "ToObjectSpace",
-    callback = {
-        method = function(self, targetCFrame)
-            local inverseCFrame = self:Inverse()
-            return inverseCFrame:ToWorldSpace(targetCFrame)
-        end
-    }
-})
-
-Instance.declare({
-    class = CFrameClasses,
-    name = "PointToWorldSpace",
-    callback = {
-        method = function(self, localPoint)
-            local currentCFrame = self.CFrame
-            
-            local rightX, rightY, rightZ = currentCFrame.RightVector.x, currentCFrame.RightVector.y, currentCFrame.RightVector.z
-            local upX, upY, upZ = currentCFrame.UpVector.x, currentCFrame.UpVector.y, currentCFrame.UpVector.z
-            local lookX, lookY, lookZ = -currentCFrame.LookVector.x, -currentCFrame.LookVector.y, -currentCFrame.LookVector.z
-            local posX, posY, posZ = currentCFrame.Position.x, currentCFrame.Position.y, currentCFrame.Position.z
-            
-            local pointX, pointY, pointZ = localPoint.x, localPoint.y, localPoint.z
-            
-            return Vector3.new(
-                posX + rightX * pointX + upX * pointY + lookX * pointZ,
-                posY + rightY * pointX + upY * pointY + lookY * pointZ,
-                posZ + rightZ * pointX + upZ * pointY + lookZ * pointZ
-            )
-        end
-    }
-})
-
-Instance.declare({
-    class = CFrameClasses,
-    name = "PointToObjectSpace",
-    callback = {
-        method = function(self, worldPoint)
-            local currentCFrame = self.CFrame
-            
-            local rightX, rightY, rightZ = currentCFrame.RightVector.x, currentCFrame.RightVector.y, currentCFrame.RightVector.z
-            local upX, upY, upZ = currentCFrame.UpVector.x, currentCFrame.UpVector.y, currentCFrame.UpVector.z
-            local lookX, lookY, lookZ = -currentCFrame.LookVector.x, -currentCFrame.LookVector.y, -currentCFrame.LookVector.z
-            local posX, posY, posZ = currentCFrame.Position.x, currentCFrame.Position.y, currentCFrame.Position.z
-            
-            local deltaX = worldPoint.x - posX
-            local deltaY = worldPoint.y - posY
-            local deltaZ = worldPoint.z - posZ
-            
-            return Vector3.new(
-                rightX * deltaX + rightY * deltaY + rightZ * deltaZ,
-                upX * deltaX + upY * deltaY + upZ * deltaZ,
-                lookX * deltaX + lookY * deltaY + lookZ * deltaZ
-            )
-        end
-    }
-})
-
-Instance.declare({
-    class = CFrameClasses,
-    name = "VectorToWorldSpace",
-    callback = {
-        method = function(self, localVector)
-            local currentCFrame = self.CFrame
-            
-            local rightX, rightY, rightZ = currentCFrame.RightVector.x, currentCFrame.RightVector.y, currentCFrame.RightVector.z
-            local upX, upY, upZ = currentCFrame.UpVector.x, currentCFrame.UpVector.y, currentCFrame.UpVector.z
-            local lookX, lookY, lookZ = -currentCFrame.LookVector.x, -currentCFrame.LookVector.y, -currentCFrame.LookVector.z
-            
-            local vecX, vecY, vecZ = localVector.x, localVector.y, localVector.z
-            
-            return Vector3.new(
-                rightX * vecX + upX * vecY + lookX * vecZ,
-                rightY * vecX + upY * vecY + lookY * vecZ,
-                rightZ * vecX + upZ * vecY + lookZ * vecZ
-            )
-        end
-    }
-})
-
-Instance.declare({
-    class = CFrameClasses,
-    name = "VectorToObjectSpace",
-    callback = {
-        method = function(self, worldVector)
-            local currentCFrame = self.CFrame
-            
-            local rightX, rightY, rightZ = currentCFrame.RightVector.x, currentCFrame.RightVector.y, currentCFrame.RightVector.z
-            local upX, upY, upZ = currentCFrame.UpVector.x, currentCFrame.UpVector.y, currentCFrame.UpVector.z
-            local lookX, lookY, lookZ = -currentCFrame.LookVector.x, -currentCFrame.LookVector.y, -currentCFrame.LookVector.z
-            
-            local vecX, vecY, vecZ = worldVector.x, worldVector.y, worldVector.z
-            
-            return Vector3.new(
-                rightX * vecX + rightY * vecY + rightZ * vecZ,
-                upX * vecX + upY * vecY + upZ * vecZ,
-                lookX * vecX + lookY * vecY + lookZ * vecZ
-            )
-        end
-    }
-})
-
-Instance.declare({
-    class = CFrameClasses,
-    name = "GetComponents",
-    callback = {
-        method = function(self)
-            local currentCFrame = self.CFrame
-            local posX, posY, posZ = currentCFrame.Position.x, currentCFrame.Position.y, currentCFrame.Position.z
-            local rightX, rightY, rightZ = currentCFrame.RightVector.x, currentCFrame.RightVector.y, currentCFrame.RightVector.z
-            local upX, upY, upZ = currentCFrame.UpVector.x, currentCFrame.UpVector.y, currentCFrame.UpVector.z
-            local lookX, lookY, lookZ = -currentCFrame.LookVector.x, -currentCFrame.LookVector.y, -currentCFrame.LookVector.z
-            
-            return posX, posY, posZ, rightX, rightY, rightZ, upX, upY, upZ, lookX, lookY, lookZ
-        end
-    }
-})
-
-Instance.declare({
-    class = CFrameClasses,
-    name = "ToEulerAnglesXYZ",
-    callback = {
-        method = function(self)
-            local currentCFrame = self.CFrame
-            local rightX, rightY = currentCFrame.RightVector.x, currentCFrame.RightVector.y
-            local upY, upZ = currentCFrame.UpVector.y, currentCFrame.UpVector.z
-            local lookX, lookY, lookZ = -currentCFrame.LookVector.x, -currentCFrame.LookVector.y, -currentCFrame.LookVector.z
-            
-            local sinY = lookX
-            local angleX, angleY, angleZ
-            
-            if math.abs(sinY) < 0.999999 then
-                angleX = math.atan2(-lookY, lookZ)
-                angleY = math.atan2(sinY, math.sqrt(1 - sinY * sinY))
-                angleZ = math.atan2(-rightY, rightX)
-            else
-                angleX = math.atan2(upY, upZ)
-                angleY = math.atan2(sinY, math.sqrt(1 - sinY * sinY))
-                angleZ = 0
-            end
-            
-            return angleX, angleY, angleZ
-        end
-    }
-})
-
-Instance.declare({
-    class = CFrameClasses,
-    name = "ToEulerAnglesYXZ",
-    callback = {
-        method = function(self)
-            local currentCFrame = self.CFrame
-            local rightX = currentCFrame.RightVector.x
-            local upX, upY = currentCFrame.UpVector.x, currentCFrame.UpVector.y
-            local lookX, lookY, lookZ = -currentCFrame.LookVector.x, -currentCFrame.LookVector.y, -currentCFrame.LookVector.z
-            
-            local sinX = -lookY
-            local angleX, angleY, angleZ
-            
-            if math.abs(sinX) < 0.999999 then
-                angleY = math.atan2(lookX, lookZ)
-                angleX = math.atan2(sinX, math.sqrt(1 - sinX * sinX))
-                angleZ = math.atan2(upX, upY)
-            else
-                angleY = math.atan2(-lookZ, rightX)
-                angleX = math.atan2(sinX, math.sqrt(1 - sinX * sinX))
-                angleZ = 0
-            end
-            
-            return angleX, angleY, angleZ
-        end
-    }
-})
-
-Instance.declare({
-    class = CFrameClasses,
-    name = "ToOrientation",
-    callback = {
-        method = function(self)
-            return self:ToEulerAnglesYXZ()
-        end
-    }
-})
-
-Instance.declare({
-    class = CFrameClasses,
-    name = "ToAxisAngle",
-    callback = {
-        method = function(self)
-            local currentCFrame = self.CFrame
-            local rightX, rightY, rightZ = currentCFrame.RightVector.x, currentCFrame.RightVector.y, currentCFrame.RightVector.z
-            local upX, upY, upZ = currentCFrame.UpVector.x, currentCFrame.UpVector.y, currentCFrame.UpVector.z
-            local lookX, lookY, lookZ = -currentCFrame.LookVector.x, -currentCFrame.LookVector.y, -currentCFrame.LookVector.z
-            
-            local trace = rightX + upY + lookZ
-            local quatW, quatX, quatY, quatZ
-            
-            if trace > 0 then
-                local scale = math.sqrt(trace + 1.0) * 2
-                quatW = 0.25 * scale
-                quatX = (upZ - lookY) / scale
-                quatY = (lookX - rightZ) / scale
-                quatZ = (rightY - upX) / scale
-            elseif rightX > upY and rightX > lookZ then
-                local scale = math.sqrt(1.0 + rightX - upY - lookZ) * 2
-                quatW = (upZ - lookY) / scale
-                quatX = 0.25 * scale
-                quatY = (upX + rightY) / scale
-                quatZ = (lookX + rightZ) / scale
-            elseif upY > lookZ then
-                local scale = math.sqrt(1.0 + upY - rightX - lookZ) * 2
-                quatW = (lookX - rightZ) / scale
-                quatX = (upX + rightY) / scale
-                quatY = 0.25 * scale
-                quatZ = (lookY + upZ) / scale
-            else
-                local scale = math.sqrt(1.0 + lookZ - rightX - upY) * 2
-                quatW = (rightY - upX) / scale
-                quatX = (lookX + rightZ) / scale
-                quatY = (lookY + upZ) / scale
-                quatZ = 0.25 * scale
-            end
-            
-            local quatLength = math.sqrt(quatX * quatX + quatY * quatY + quatZ * quatZ + quatW * quatW)
-            if quatLength == 0 then
-                return Vector3.new(1, 0, 0), 0
-            end
-            
-            quatX, quatY, quatZ, quatW = quatX / quatLength, quatY / quatLength, quatZ / quatLength, quatW / quatLength
-            
-            local angle = 2 * math.acos(math.clamp(quatW, -1, 1))
-            local sinHalfAngle = math.sqrt(1 - quatW * quatW)
-            
-            if sinHalfAngle < 1e-6 then
-                return Vector3.new(1, 0, 0), 0
-            end
-            
-            return Vector3.new(quatX / sinHalfAngle, quatY / sinHalfAngle, quatZ / sinHalfAngle), angle
-        end
-    }
-})
-
-Instance.declare({
-    class = CFrameClasses,
-    name = "Lerp",
-    callback = {
-        method = function(self, goalCFrame, alpha)
-            local startCFrame = self.CFrame
-            local startPosX, startPosY, startPosZ = startCFrame.Position.x, startCFrame.Position.y, startCFrame.Position.z
-            local goalPosX, goalPosY, goalPosZ = goalCFrame.X, goalCFrame.Y, goalCFrame.Z
-            
-            local lerpedPosX = startPosX + (goalPosX - startPosX) * alpha
-            local lerpedPosY = startPosY + (goalPosY - startPosY) * alpha
-            local lerpedPosZ = startPosZ + (goalPosZ - startPosZ) * alpha
-            
-            local startRightX, startRightY, startRightZ = startCFrame.RightVector.x, startCFrame.RightVector.y, startCFrame.RightVector.z
-            local startUpX, startUpY, startUpZ = startCFrame.UpVector.x, startCFrame.UpVector.y, startCFrame.UpVector.z
-            local startLookX, startLookY, startLookZ = -startCFrame.LookVector.x, -startCFrame.LookVector.y, -startCFrame.LookVector.z
-            
-            local goalRightX, goalRightY, goalRightZ = goalCFrame.R00, goalCFrame.R01, goalCFrame.R02
-            local goalUpX, goalUpY, goalUpZ = goalCFrame.R10, goalCFrame.R11, goalCFrame.R12
-            local goalLookX, goalLookY, goalLookZ = goalCFrame.R20, goalCFrame.R21, goalCFrame.R22
-            
-            local function matrixToQuaternion(rightX, rightY, rightZ, upX, upY, upZ, lookX, lookY, lookZ)
-                local trace = rightX + upY + lookZ
-                local quatW, quatX, quatY, quatZ
-                
-                if trace > 0 then
-                    local scale = math.sqrt(trace + 1.0) * 2
-                    quatW = 0.25 * scale
-                    quatX = (upZ - lookY) / scale
-                    quatY = (lookX - rightZ) / scale
-                    quatZ = (rightY - upX) / scale
-                elseif rightX > upY and rightX > lookZ then
-                    local scale = math.sqrt(1.0 + rightX - upY - lookZ) * 2
-                    quatW = (upZ - lookY) / scale
-                    quatX = 0.25 * scale
-                    quatY = (upX + rightY) / scale
-                    quatZ = (lookX + rightZ) / scale
-                elseif upY > lookZ then
-                    local scale = math.sqrt(1.0 + upY - rightX - lookZ) * 2
-                    quatW = (lookX - rightZ) / scale
-                    quatX = (upX + rightY) / scale
-                    quatY = 0.25 * scale
-                    quatZ = (lookY + upZ) / scale
-                else
-                    local scale = math.sqrt(1.0 + lookZ - rightX - upY) * 2
-                    quatW = (rightY - upX) / scale
-                    quatX = (lookX + rightZ) / scale
-                    quatY = (lookY + upZ) / scale
-                    quatZ = 0.25 * scale
-                end
-                
-                local quatLength = math.sqrt(quatX * quatX + quatY * quatY + quatZ * quatZ + quatW * quatW)
-                return quatX / quatLength, quatY / quatLength, quatZ / quatLength, quatW / quatLength
-            end
-            
-            local startQuatX, startQuatY, startQuatZ, startQuatW = matrixToQuaternion(startRightX, startRightY, startRightZ, startUpX, startUpY, startUpZ, startLookX, startLookY, startLookZ)
-            local goalQuatX, goalQuatY, goalQuatZ, goalQuatW = matrixToQuaternion(goalRightX, goalRightY, goalRightZ, goalUpX, goalUpY, goalUpZ, goalLookX, goalLookY, goalLookZ)
-            
-            local dotProduct = startQuatX * goalQuatX + startQuatY * goalQuatY + startQuatZ * goalQuatZ + startQuatW * goalQuatW
-            if dotProduct < 0 then
-                goalQuatX, goalQuatY, goalQuatZ, goalQuatW = -goalQuatX, -goalQuatY, -goalQuatZ, -goalQuatW
-                dotProduct = -dotProduct
-            end
-            
-            local lerpedQuatX, lerpedQuatY, lerpedQuatZ, lerpedQuatW
-            if dotProduct > 1 - 1e-6 then
-                lerpedQuatX = startQuatX + (goalQuatX - startQuatX) * alpha
-                lerpedQuatY = startQuatY + (goalQuatY - startQuatY) * alpha
-                lerpedQuatZ = startQuatZ + (goalQuatZ - startQuatZ) * alpha
-                lerpedQuatW = startQuatW + (goalQuatW - startQuatW) * alpha
-                local quatLength = math.sqrt(lerpedQuatX * lerpedQuatX + lerpedQuatY * lerpedQuatY + lerpedQuatZ * lerpedQuatZ + lerpedQuatW * lerpedQuatW)
-                lerpedQuatX, lerpedQuatY, lerpedQuatZ, lerpedQuatW = lerpedQuatX / quatLength, lerpedQuatY / quatLength, lerpedQuatZ / quatLength, lerpedQuatW / quatLength
-            else
-                local theta0 = math.acos(math.clamp(dotProduct, -1, 1))
-                local sinTheta0 = math.sin(theta0)
-                local theta = theta0 * alpha
-                local sinTheta = math.sin(theta)
-                local scale0 = math.cos(theta) - dotProduct * sinTheta / sinTheta0
-                local scale1 = sinTheta / sinTheta0
-                lerpedQuatX = scale0 * startQuatX + scale1 * goalQuatX
-                lerpedQuatY = scale0 * startQuatY + scale1 * goalQuatY
-                lerpedQuatZ = scale0 * startQuatZ + scale1 * goalQuatZ
-                lerpedQuatW = scale0 * startQuatW + scale1 * goalQuatW
-            end
-            
-            local quatLength = math.sqrt(lerpedQuatX * lerpedQuatX + lerpedQuatY * lerpedQuatY + lerpedQuatZ * lerpedQuatZ + lerpedQuatW * lerpedQuatW)
-            lerpedQuatX, lerpedQuatY, lerpedQuatZ, lerpedQuatW = lerpedQuatX / quatLength, lerpedQuatY / quatLength, lerpedQuatZ / quatLength, lerpedQuatW / quatLength
-            
-            local xx, yy, zz = lerpedQuatX * lerpedQuatX, lerpedQuatY * lerpedQuatY, lerpedQuatZ * lerpedQuatZ
-            local xy, xz, yz = lerpedQuatX * lerpedQuatY, lerpedQuatX * lerpedQuatZ, lerpedQuatY * lerpedQuatZ
-            local wx, wy, wz = lerpedQuatW * lerpedQuatX, lerpedQuatW * lerpedQuatY, lerpedQuatW * lerpedQuatZ
-            
-            local resultRightX = 1 - 2 * (yy + zz)
-            local resultRightY = 2 * (xy + wz)
-            local resultRightZ = 2 * (xz - wy)
-            local resultUpX = 2 * (xy - wz)
-            local resultUpY = 1 - 2 * (xx + zz)
-            local resultUpZ = 2 * (yz + wx)
-            local resultLookX = 2 * (xz + wy)
-            local resultLookY = 2 * (yz - wx)
-            local resultLookZ = 1 - 2 * (xx + yy)
-            
-            return CFrame.new(lerpedPosX, lerpedPosY, lerpedPosZ, resultRightX, resultRightY, resultRightZ, resultUpX, resultUpY, resultUpZ, resultLookX, resultLookY, resultLookZ)
-        end
-    }
-})
-
-Instance.declare({
-    class = {"Part", "MeshPart", "UnionOperation", "TrussPart", "Camera"},
-    name = "Orthonormalize",
-    callback = {
-        method = function(self)  local currentCFrame = self.CFrame
-            local posX, posY, posZ = currentCFrame.Position.X, currentCFrame.Position.Y, currentCFrame.Position.Z
-            
-            -- Use vector.create to make compatible vectors
-            local xVecRaw = vector.create(currentCFrame.RightVector.X, currentCFrame.RightVector.Y, currentCFrame.RightVector.Z)
-            local yVecRaw = vector.create(currentCFrame.UpVector.X, currentCFrame.UpVector.Y, currentCFrame.UpVector.Z)
-            
-            -- Use vector library functions
-            local xAxis = vector.normalize(xVecRaw)
-            local dotProduct = vector.dot(xAxis, yVecRaw)
-            local yAxisRaw = yVecRaw - xAxis * dotProduct
-            local yAxis = vector.normalize(yAxisRaw)
-            local zAxis = vector.cross(xAxis, yAxis)
-            
-            -- Use .X, .Y, .Z (Uppercase) for vector library objects
-            return CFrame.new(posX, posY, posZ, xAxis.X, yAxis.X, zAxis.X, xAxis.Y, yAxis.Y, zAxis.Y, xAxis.Z, yAxis.Z, zAxis.Z)
-        end
-    }
-})
-
-
-Instance.declare({
-    class = CFrameClasses,
-    name = "FuzzyEq",
-    callback = {
-        method = function(self, otherCFrame, epsilon)
-            epsilon = epsilon or 1e-5
-            local currentCFrame = self.CFrame
-            local currentPosX, currentPosY, currentPosZ = currentCFrame.Position.x, currentCFrame.Position.y, currentCFrame.Position.z
-            
-            if math.abs(currentPosX - otherCFrame.X) > epsilon or 
-               math.abs(currentPosY - otherCFrame.Y) > epsilon or 
-               math.abs(currentPosZ - otherCFrame.Z) > epsilon then
-                return false
-            end
-            
-            return self:AngleBetween(otherCFrame) <= epsilon
-        end
-    }
-})
-
-Instance.declare({
-    class = CFrameClasses,
-    name = "AngleBetween",
-    callback = {
-        method = function(self, otherCFrame)
-            local currentCFrame = self.CFrame
-            local currentRightX, currentRightY, currentRightZ = currentCFrame.RightVector.x, currentCFrame.RightVector.y, currentCFrame.RightVector.z
-            local currentUpX, currentUpY, currentUpZ = currentCFrame.UpVector.x, currentCFrame.UpVector.y, currentCFrame.UpVector.z
-            local currentLookX, currentLookY, currentLookZ = -currentCFrame.LookVector.x, -currentCFrame.LookVector.y, -currentCFrame.LookVector.z
-            
-            local otherRightX, otherRightY, otherRightZ = otherCFrame.R00, otherCFrame.R01, otherCFrame.R02
-            local otherUpX, otherUpY, otherUpZ = otherCFrame.R10, otherCFrame.R11, otherCFrame.R12
-            local otherLookX, otherLookY, otherLookZ = otherCFrame.R20, otherCFrame.R21, otherCFrame.R22
-            
-            local dotRightX = currentRightX * otherRightX + currentUpX * otherUpX + currentLookX * otherLookX
-            local dotUpY = currentRightY * otherRightY + currentUpY * otherUpY + currentLookY * otherLookY
-            local dotLookZ = currentRightZ * otherRightZ + currentUpZ * otherUpZ + currentLookZ * otherLookZ
-            
-            return math.acos(math.clamp((dotRightX + dotUpY + dotLookZ - 1) * 0.5, -1, 1))
-        end
-    }
-})
+print("loaded")
