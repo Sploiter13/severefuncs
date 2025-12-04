@@ -1,4 +1,3 @@
-
 --!optimization 2
 
 -- ═══════════════════════════════════════════════════════════
@@ -133,20 +132,157 @@ local function interpolateVector(startVec, endVec, alpha)
     )
 end
 
+--!optimization 2
+
+-- ═══════════════════════════════════════════════════════════
+-- FIXED CFRAME INTERPOLATION WITH QUATERNION SLERP
+-- ═══════════════════════════════════════════════════════════
+
+-- Add this to your utility functions section
+local function quaternionFromCFrame(cf)
+    local trace = cf.RightVector.X + cf.UpVector.Y + cf.LookVector.Z
+    
+    if trace > 0 then
+        local s = math.sqrt(1 + trace) * 2
+        return {
+            w = 0.25 * s,
+            x = (cf.UpVector.Z - cf.LookVector.Y) / s,
+            y = (cf.LookVector.X - cf.RightVector.Z) / s,
+            z = (cf.RightVector.Y - cf.UpVector.X) / s
+        }
+    elseif cf.RightVector.X > cf.UpVector.Y and cf.RightVector.X > cf.LookVector.Z then
+        local s = math.sqrt(1 + cf.RightVector.X - cf.UpVector.Y - cf.LookVector.Z) * 2
+        return {
+            w = (cf.UpVector.Z - cf.LookVector.Y) / s,
+            x = 0.25 * s,
+            y = (cf.UpVector.X + cf.RightVector.Y) / s,
+            z = (cf.LookVector.X + cf.RightVector.Z) / s
+        }
+    elseif cf.UpVector.Y > cf.LookVector.Z then
+        local s = math.sqrt(1 + cf.UpVector.Y - cf.RightVector.X - cf.LookVector.Z) * 2
+        return {
+            w = (cf.LookVector.X - cf.RightVector.Z) / s,
+            x = (cf.UpVector.X + cf.RightVector.Y) / s,
+            y = 0.25 * s,
+            z = (cf.LookVector.Y + cf.UpVector.Z) / s
+        }
+    else
+        local s = math.sqrt(1 + cf.LookVector.Z - cf.RightVector.X - cf.UpVector.Y) * 2
+        return {
+            w = (cf.RightVector.Y - cf.UpVector.X) / s,
+            x = (cf.LookVector.X + cf.RightVector.Z) / s,
+            y = (cf.LookVector.Y + cf.UpVector.Z) / s,
+            z = 0.25 * s
+        }
+    end
+end
+
+local function quaternionToRotationMatrix(q)
+    local qx, qy, qz, qw = q.x, q.y, q.z, q.w
+    
+    -- Calculate rotation matrix components
+    local x2 = qx + qx
+    local y2 = qy + qy
+    local z2 = qz + qz
+    
+    local xx2 = qx * x2
+    local xy2 = qx * y2
+    local xz2 = qx * z2
+    
+    local yy2 = qy * y2
+    local yz2 = qy * z2
+    local zz2 = qz * z2
+    
+    local wx2 = qw * x2
+    local wy2 = qw * y2
+    local wz2 = qw * z2
+    
+    -- Build rotation vectors
+    local right = vector.create(
+        1 - (yy2 + zz2),
+        xy2 + wz2,
+        xz2 - wy2
+    )
+    
+    local up = vector.create(
+        xy2 - wz2,
+        1 - (xx2 + zz2),
+        yz2 + wx2
+    )
+    
+    local look = vector.create(
+        xz2 + wy2,
+        yz2 - wx2,
+        1 - (xx2 + yy2)
+    )
+    
+    return right, up, look
+end
+
+local function quaternionSlerp(q1, q2, alpha)
+    -- Compute dot product
+    local dot = q1.x * q2.x + q1.y * q2.y + q1.z * q2.z + q1.w * q2.w
+    
+    -- If dot is negative, negate one quaternion to take shorter path
+    local q2_adjusted = q2
+    if dot < 0 then
+        q2_adjusted = {x = -q2.x, y = -q2.y, z = -q2.z, w = -q2.w}
+        dot = -dot
+    end
+    
+    -- Clamp dot to avoid numerical errors
+    dot = math.clamp(dot, -1, 1)
+    
+    -- If quaternions are very close, use linear interpolation
+    if dot > 0.9995 then
+        local result = {
+            x = q1.x + alpha * (q2_adjusted.x - q1.x),
+            y = q1.y + alpha * (q2_adjusted.y - q1.y),
+            z = q1.z + alpha * (q2_adjusted.z - q1.z),
+            w = q1.w + alpha * (q2_adjusted.w - q1.w)
+        }
+        
+        -- Normalize
+        local len = math.sqrt(result.x * result.x + result.y * result.y + 
+                              result.z * result.z + result.w * result.w)
+        if len > 0 then
+            result.x = result.x / len
+            result.y = result.y / len
+            result.z = result.z / len
+            result.w = result.w / len
+        end
+        
+        return result
+    end
+    
+    -- Calculate angle and perform slerp
+    local theta = math.acos(dot)
+    local sinTheta = math.sin(theta)
+    
+    local scale1 = math.sin((1 - alpha) * theta) / sinTheta
+    local scale2 = math.sin(alpha * theta) / sinTheta
+    
+    return {
+        x = scale1 * q1.x + scale2 * q2_adjusted.x,
+        y = scale1 * q1.y + scale2 * q2_adjusted.y,
+        z = scale1 * q1.z + scale2 * q2_adjusted.z,
+        w = scale1 * q1.w + scale2 * q2_adjusted.w
+    }
+end
+
 local function interpolateCFrame(cf1, cf2, alpha)
-    -- Check for nil
+    -- Validate inputs
     if not cf1 or not cf2 then
         warn("[TweenService] interpolateCFrame: nil CFrame detected")
         return cf1 or cf2
     end
     
-    -- Check for required fields
     if not cf1.Position or not cf2.Position then
         warn("[TweenService] interpolateCFrame: CFrame missing Position")
         return cf2
     end
     
-    -- Position interpolation
+    -- Interpolate position (simple linear)
     local p1 = cf1.Position
     local p2 = cf2.Position
     local newPos = vector.create(
@@ -155,34 +291,28 @@ local function interpolateCFrame(cf1, cf2, alpha)
         p1.Z + (p2.Z - p1.Z) * alpha
     )
     
-    -- Directly lerp the rotation vectors
-    local r1 = cf1.RightVector or vector.create(1, 0, 0)
-    local r2 = cf2.RightVector or vector.create(1, 0, 0)
-    local u1 = cf1.UpVector or vector.create(0, 1, 0)
-    local u2 = cf2.UpVector or vector.create(0, 1, 0)
-    local l1 = cf1.LookVector or vector.create(0, 0, 1)
-    local l2 = cf2.LookVector or vector.create(0, 0, 1)
+    -- Convert CFrames to quaternions (keep this for smooth rotation)
+    local q1 = quaternionFromCFrame(cf1)
+    local q2 = quaternionFromCFrame(cf2)
     
-    local newRight = vector.create(
-        r1.X + (r2.X - r1.X) * alpha,
-        r1.Y + (r2.Y - r1.Y) * alpha,
-        r1.Z + (r2.Z - r1.Z) * alpha
-    )
+    -- Slerp between quaternions
+    local qResult = quaternionSlerp(q1, q2, alpha)
     
-    local newUp = vector.create(
-        u1.X + (u2.X - u1.X) * alpha,
-        u1.Y + (u2.Y - u1.Y) * alpha,
-        u1.Z + (u2.Z - u1.Z) * alpha
-    )
+    -- Convert quaternion back to rotation matrix
+    local right, up, look = quaternionToRotationMatrix(qResult)
     
-    local newLook = vector.create(
-        l1.X + (l2.X - l1.X) * alpha,
-        l1.Y + (l2.Y - l1.Y) * alpha,
-        l1.Z + (l2.Z - l1.Z) * alpha 
-    )
-    
-    -- Use CFrame.fromMatrix
-    return CFrame.fromMatrix(newPos, newRight, newUp, newLook)
+    -- ✅ FIX: Use CFrame.lookAt instead of CFrame.fromMatrix!
+    -- Calculate the forward direction point
+   local fixedLook = vector.create(-look.X, -look.Y, -look.Z)
+
+-- Use the negated look to build the lookAt point
+local lookAtPoint = vector.create(
+    newPos.X + fixedLook.X,
+    newPos.Y + fixedLook.Y,
+    newPos.Z + fixedLook.Z
+)
+
+return CFrame.lookAt(newPos, lookAtPoint, up)
 end
 
 local function interpolateTable(startTable, endTable, alpha)
@@ -627,15 +757,20 @@ function Tween.new(instance, tweenInfo, properties)
     end
     
     -- Normalize target values
-    for propName, targetValue in pairs(properties) do
-        if isCFrameType(targetValue) then
-            -- Don't normalize CFrames, keep them as-is
-            self.Properties[propName] = targetValue
-        elseif isVectorType(targetValue) then
-            local vec = toUnifiedVector(targetValue)
-            self.Properties[propName] = {type = "Vector", X = vec.X, Y = vec.Y, Z = vec.Z}
-        end
+   for propName, targetValue in pairs(properties) do
+    if isCFrameType(targetValue) then
+        self.Properties[propName] = {
+            type = "CFrame",
+            Position = targetValue.Position,
+            RightVector = targetValue.RightVector,
+            UpVector = targetValue.UpVector,
+            LookVector = targetValue.LookVector
+        }
+    elseif isVectorType(targetValue) then
+        local vec = toUnifiedVector(targetValue)
+        self.Properties[propName] = {type = "Vector", X = vec.X, Y = vec.Y, Z = vec.Z}
     end
+end
     
     -- Event system
     self.Completed = {
@@ -753,14 +888,16 @@ function Tween:Cancel()
     end
 end
 
+--!optimization 2
+
 function Tween:_step(deltaTime)
     if not self._isActive then
         return false
     end
     
     self._elapsedTime = self._elapsedTime + deltaTime
-    
     local tweenInfo = self.TweenInfo
+    
     if not tweenInfo then
         warn("[TweenService] TweenInfo is missing")
         return false
@@ -776,14 +913,32 @@ function Tween:_step(deltaTime)
     local totalIterations = tweenInfo.RepeatCount == 0 and 1 or tweenInfo.RepeatCount
     local totalDuration = duration * totalIterations
     
-    -- Check if animation is complete
+    -- ✅ Check if animation is complete FIRST
     if adjustedTime >= totalDuration then
-        -- Set final values
+        -- Set final values with exact target (alpha = 1.0)
         local success = pcall(function()
             for propName, targetValue in pairs(self.Properties) do
                 if type(targetValue) == "table" and targetValue.type == "Vector" then
+                    -- Vector: final value
                     self.Instance[propName] = vector.create(targetValue.X, targetValue.Y, targetValue.Z)
-                else
+                    
+                elseif type(targetValue) == "table" and targetValue.Position and targetValue.LookVector then
+                    -- CFrame: Use CFrame.lookAt for final value
+                    local pos = targetValue.Position
+                    local look = targetValue.LookVector
+                    local up = targetValue.UpVector
+                    
+                    local fixedLook = vector.create(-look.X, -look.Y, -look.Z)
+
+    local lookAtPoint = vector.create(
+        pos.X + fixedLook.X,
+        pos.Y + fixedLook.Y,
+        pos.Z + fixedLook.Z
+    )
+
+    self.Instance[propName] = CFrame.lookAt(pos, lookAtPoint, up)
+                     else
+                    -- Other types: direct assignment
                     self.Instance[propName] = targetValue
                 end
             end
@@ -804,7 +959,6 @@ function Tween:_step(deltaTime)
     
     -- Calculate progress within current iteration
     local iterationProgress = (adjustedTime % duration) / duration
-    
     if self._playbackDirection == -1 then
         iterationProgress = 1 - iterationProgress
     end
@@ -813,46 +967,42 @@ function Tween:_step(deltaTime)
     local easingFunc = getEasingFunction(tweenInfo.EasingStyle, tweenInfo.EasingDirection)
     local alpha = easingFunc(iterationProgress)
     
-    -- Update properties
+    -- Update properties during animation
     for propName, targetValue in pairs(self.Properties) do
         if self._originalValues[propName] ~= nil then
             local originalValue = self._originalValues[propName]
-            
             local success = pcall(function()
                 if type(originalValue) == "table" and originalValue.type == "Vector" then
                     -- Vector interpolation
                     local startVec = vector.create(originalValue.X, originalValue.Y, originalValue.Z)
                     local endVec
-                    
                     if type(targetValue) == "table" and targetValue.type == "Vector" then
                         endVec = vector.create(targetValue.X, targetValue.Y, targetValue.Z)
                     else
                         endVec = toUnifiedVector(targetValue)
                     end
-                    
                     local resultVec = interpolateVector(startVec, endVec, alpha)
                     self.Instance[propName] = resultVec
                     
                 elseif isCFrameType(originalValue) then
--- CFrame interpolation
-    local success2, resultCF = pcall(function()
-        return interpolateCFrame(originalValue, targetValue, alpha)
-    end)
-    
-    if not success2 then
-        warn("[TweenService] interpolateCFrame failed:", resultCF)
-    else
-        local success3, err = pcall(function()
-            self.Instance[propName] = resultCF
-        end)
-        
-        if not success3 then
-            warn("[TweenService] Failed to SET CFrame:", err)
-            warn("[TweenService] resultCF type:", type(resultCF))
-            warn("[TweenService] resultCF:", resultCF)
-        end
-    end
-
+                    -- CFrame interpolation
+                    local success2, resultCF = pcall(function()
+                        return interpolateCFrame(originalValue, targetValue, alpha)
+                    end)
+                    
+                    if not success2 then
+                        warn("[TweenService] interpolateCFrame failed:", resultCF)
+                    elseif resultCF and resultCF.Position then
+                        local success3, err = pcall(function()
+                            self.Instance[propName] = resultCF
+                        end)
+                        
+                        if not success3 then
+                            warn("[TweenService] Failed to SET CFrame:", err)
+                        end
+                    else
+                        warn("[TweenService] Invalid CFrame result, skipping frame")
+                    end
                     
                 elseif type(originalValue) == "table" and type(targetValue) == "table" then
                     -- Table interpolation
@@ -862,6 +1012,7 @@ function Tween:_step(deltaTime)
                 elseif type(originalValue) == "number" and type(targetValue) == "number" then
                     -- Number interpolation
                     self.Instance[propName] = interpolateNumber(originalValue, targetValue, alpha)
+                    
                 else
                     -- Direct assignment
                     self.Instance[propName] = targetValue
@@ -902,6 +1053,7 @@ function Tween:_step(deltaTime)
     
     return true
 end
+
 
 -- ═══════════════════════════════════════════════════════════
 -- SECTION 7: ANIMATION REGISTRY & UPDATE LOOP
