@@ -1298,7 +1298,7 @@ Instance.declare({
 -- Text (for TextLabel, TextButton, TextBox)
 Instance.declare({
     class = ClassGroups.TextElements,
-    name = "Text",
+    name = "Textt",
     callback = {
         get = function(self)
             return memory.readstring(self.Data, O.TextLabel.Text)
