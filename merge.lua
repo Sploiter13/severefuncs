@@ -196,13 +196,24 @@ Instance.declare({
     name = "RigType",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readi32(self.Data, O.Humanoid.RigType)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             assert(type(value) == "number", "Value must be a number (0=R6, 1=R15)")
             memory.writei32(self.Data, O.Humanoid.RigType, value)
+        end
+    }
+})
+
+Instance.declare({
+    class = "Humanoid",
+    name = "Jump",
+    callback = {
+        get = function(self)
+            return memory.readbool(self.Data, O.Humanoid.Jump)
+        end,
+        set = function(self, value)
+            memory.writebool(self.Data, O.Humanoid.Jump, value)
         end
     }
 })
@@ -210,33 +221,14 @@ Instance.declare({
 -- WalkSpeed
 Instance.declare({class = "Humanoid", name = "WalkSpeed", callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid Pointer")
             return memory.readf32(self.Data, O.Humanoid.Walkspeed)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid Pointer")
-            assert(type(value) == "number", "Value must be a number")
+            memory.writef32(self.Data, O.Humanoid.WalkspeedCheck, value)
             memory.writef32(self.Data, O.Humanoid.Walkspeed, value)
             memory.writef32(self.Data, O.Humanoid.WalkspeedCheck, value)
         end
     }})
-
-Instance.declare({
-    class = "Humanoid",
-    name = "Jump",
-    callback = {
-        get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            return memory.readbool(self.Data, O.Humanoid.Jump)
-        end,
-        set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "boolean", "Value must be a boolean")
-            memory.writebool(self.Data, O.Humanoid.Jump, value)
-        end
-    }
-})
-
 
 -- JumpPower
 Instance.declare({
@@ -244,12 +236,9 @@ Instance.declare({
     name = "JumpPower",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.Humanoid.JumpPower)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.Humanoid.JumpPower, value)
         end
     }
@@ -261,12 +250,9 @@ Instance.declare({
     name = "JumpHeight",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.Humanoid.JumpHeight)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.Humanoid.JumpHeight, value)
         end
     }
@@ -278,12 +264,9 @@ Instance.declare({
     name = "HipHeight",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.Humanoid.HipHeight)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.Humanoid.HipHeight, value)
         end
     }
@@ -295,12 +278,9 @@ Instance.declare({
     name = "MaxSlopeAngle",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.Humanoid.MaxSlopeAngle)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.Humanoid.MaxSlopeAngle, value)
         end
     }
@@ -312,12 +292,9 @@ Instance.declare({
     name = "AutoRotate",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readu8(self.Data, O.Humanoid.AutoRotate) == 1
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "boolean", "Value must be a boolean")
             memory.writeu8(self.Data, O.Humanoid.AutoRotate, value and 1 or 0)
         end
     }
@@ -329,12 +306,9 @@ Instance.declare({
     name = "BreakJointsOnDeath",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readu8(self.Data, LocalOffsets.Humanoid.BreakJointsOnDeath) ~= 0
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "boolean", "Value must be a boolean")
             memory.writeu8(self.Data, LocalOffsets.Humanoid.BreakJointsOnDeath, value and 1 or 0)
         end
     }
@@ -359,7 +333,6 @@ Instance.declare({
     name = "HumanoidStateType",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             local statePtr = memory.readu64(self.Data, O.Humanoid.HumanoidState)
             
             if statePtr and statePtr ~= 0 then
@@ -369,7 +342,6 @@ Instance.declare({
             return "None"
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             
             local idToSet = value
             if type(value) == "string" then
@@ -399,13 +371,10 @@ Instance.declare({
     name = "Anchored",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             local byte = memory.readu8(self.Data, O.BasePart.PrimitiveFlags)
             return bit32.band(byte, 2) ~= 0
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "boolean", "Value must be a boolean")
             local byte = memory.readu8(self.Data, O.BasePart.PrimitiveFlags)
             byte = value and bit32.bor(byte, 2) or bit32.band(byte, bit32.bnot(2))
             memory.writeu8(self.Data, O.BasePart.PrimitiveFlags, byte)
@@ -419,13 +388,10 @@ Instance.declare({
     name = "CanTouch",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             local byte = memory.readu8(self.Data, O.BasePart.PrimitiveFlags)
             return bit32.band(byte, 16) ~= 0
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "boolean", "Value must be a boolean")
             local byte = memory.readu8(self.Data, O.BasePart.PrimitiveFlags)
             byte = value and bit32.bor(byte, 16) or bit32.band(byte, bit32.bnot(16))
             memory.writeu8(self.Data, O.BasePart.PrimitiveFlags, byte)
@@ -439,12 +405,9 @@ Instance.declare({
     name = "CastShadow",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readu8(self.Data, LocalOffsets.BasePart.CastShadow) ~= 0
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "boolean", "Value must be a boolean")
             memory.writeu8(self.Data, LocalOffsets.BasePart.CastShadow, value and 1 or 0)
         end
     }
@@ -456,12 +419,9 @@ Instance.declare({
     name = "Massless",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readu8(self.Data, LocalOffsets.BasePart.Massless) ~= 0
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "boolean", "Value must be a boolean")
             memory.writeu8(self.Data, LocalOffsets.BasePart.Massless, value and 1 or 0)
         end
     }
@@ -473,12 +433,9 @@ Instance.declare({
     name = "Shape",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readu8(self.Data, O.BasePart.Shape)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writeu8(self.Data, O.BasePart.Shape, value)
         end
     }
@@ -490,14 +447,11 @@ Instance.declare({
     name = "Material",
     callback = {
         get = function(self)
-            local primitive = getPrimitive(self)
-            assert(primitive and primitive ~= 0, "Invalid primitive")
+
             return memory.readi32(primitive, O.BasePart.Material)
         end,
         set = function(self, value)
-            assert(type(value) == "number", "Value must be a number")
-            local primitive = getPrimitive(self)
-            assert(primitive and primitive ~= 0, "Invalid primitive")
+
             memory.writei32(primitive, O.BasePart.Material, value)
         end
     }
@@ -509,15 +463,12 @@ Instance.declare({
     name = "AssemblyLinearVelocity",
     callback = {
         get = function(self)
-            local primitive = getPrimitive(self)
-            assert(primitive and primitive ~= 0, "Invalid primitive")
+
             local raw = memory.readvector(primitive, O.BasePart.AssemblyLinearVelocity)
             return vector.create(round(raw.X, 3), round(raw.Y, 3), round(raw.Z, 3))
         end,
         set = function(self, value)
-            assert(isVector(value), "Value must be a vector or Vector3")
-            local primitive = getPrimitive(self)
-            assert(primitive and primitive ~= 0, "Invalid primitive")
+
             local vecToWrite = toVector(value)
             memory.writevector(primitive, O.BasePart.AssemblyLinearVelocity, vecToWrite)
         end
@@ -530,15 +481,12 @@ Instance.declare({
     name = "AssemblyAngularVelocity",
     callback = {
         get = function(self)
-            local primitive = getPrimitive(self)
-            assert(primitive and primitive ~= 0, "Invalid primitive")
+
             local raw = memory.readvector(primitive, O.BasePart.AssemblyAngularVelocity)
             return vector.create(round(raw.X, 3), round(raw.Y, 3), round(raw.Z, 3))
         end,
         set = function(self, value)
-            assert(isVector(value), "Value must be a vector or Vector3")
-            local primitive = getPrimitive(self)
-            assert(primitive and primitive ~= 0, "Invalid primitive")
+
             local vecToWrite = toVector(value)
             memory.writevector(primitive, O.BasePart.AssemblyAngularVelocity, vecToWrite)
         end
@@ -551,13 +499,10 @@ Instance.declare({
     name = "Color",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             local raw = memory.readvector(self.Data, O.BasePart.Color)
             return Color3.new(raw.X, raw.Y, raw.Z)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
             local vecToWrite = toColorVector(value)
             memory.writevector(self.Data, O.BasePart.Color, vecToWrite)
         end
@@ -570,12 +515,9 @@ Instance.declare({
     name = "Transparency",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.BasePart.Transparency)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.BasePart.Transparency, value)
         end
     }
@@ -587,12 +529,9 @@ Instance.declare({
     name = "Reflectance",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.BasePart.Reflectance)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.BasePart.Reflectance, value)
         end
     }
@@ -675,12 +614,9 @@ Instance.declare({
     name = "HeadScale",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, LocalOffsets.Camera.HeadScale)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, LocalOffsets.Camera.HeadScale, value)
         end
     }
@@ -692,12 +628,9 @@ Instance.declare({
     name = "CameraType",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readi32(self.Data, O.Camera.CameraType)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writei32(self.Data, O.Camera.CameraType, value)
         end
     }
@@ -713,12 +646,9 @@ Instance.declare({
     name = "Brightness",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.Lighting.Brightness)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.Lighting.Brightness, value)
         end
     }
@@ -730,12 +660,9 @@ Instance.declare({
     name = "FogColor",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readvector(self.Data, O.Lighting.FogColor)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
             local vecToWrite = toColorVector(value)
             memory.writevector(self.Data, O.Lighting.FogColor, vecToWrite)
         end
@@ -748,12 +675,9 @@ Instance.declare({
     name = "Ambient",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readvector(self.Data, O.Lighting.Ambient)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
             local vecToWrite = toColorVector(value)
             memory.writevector(self.Data, O.Lighting.Ambient, vecToWrite)
         end
@@ -766,12 +690,9 @@ Instance.declare({
     name = "OutdoorAmbient",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readvector(self.Data, O.Lighting.OutdoorAmbient)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
             local vecToWrite = toColorVector(value)
             memory.writevector(self.Data, O.Lighting.OutdoorAmbient, vecToWrite)
         end
@@ -784,12 +705,9 @@ Instance.declare({
     name = "ColorShift_Top",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readvector(self.Data, O.Lighting.ColorShift_Top)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
             local vecToWrite = toColorVector(value)
             memory.writevector(self.Data, O.Lighting.ColorShift_Top, vecToWrite)
         end
@@ -802,12 +720,9 @@ Instance.declare({
     name = "ColorShift_Bottom",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readvector(self.Data, O.Lighting.ColorShift_Bottom)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
             local vecToWrite = toColorVector(value)
             memory.writevector(self.Data, O.Lighting.ColorShift_Bottom, vecToWrite)
         end
@@ -820,12 +735,9 @@ Instance.declare({
     name = "FogStart",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.Lighting.FogStart)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.Lighting.FogStart, value)
         end
     }
@@ -837,12 +749,9 @@ Instance.declare({
     name = "FogEnd",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.Lighting.FogEnd)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.Lighting.FogEnd, value)
         end
     }
@@ -854,12 +763,9 @@ Instance.declare({
     name = "ExposureCompensation",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.Lighting.ExposureCompensation)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.Lighting.ExposureCompensation, value)
         end
     }
@@ -871,12 +777,9 @@ Instance.declare({
     name = "GeographicLatitude",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.Lighting.GeographicLatitude)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.Lighting.GeographicLatitude, value)
         end
     }
@@ -888,12 +791,9 @@ Instance.declare({
     name = "ClockTime",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf64(self.Data, O.Lighting.TimeOfDay) / 3600
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef64(self.Data, O.Lighting.TimeOfDay, value * 3600)
         end
     }
@@ -909,12 +809,9 @@ Instance.declare({
     name = "Country",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readstring(self.Data, O.Player.Country)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "string", "Value must be a string")
             memory.writestring(self.Data, O.Player.Country, value)
         end
     }
@@ -926,12 +823,9 @@ Instance.declare({
     name = "CameraMaxZoomDistance",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.Player.MaxZoomDistance)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.Player.MaxZoomDistance, value)
         end
     }
@@ -943,12 +837,9 @@ Instance.declare({
     name = "CameraMinZoomDistance",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.Player.MinZoomDistance)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.Player.MinZoomDistance, value)
         end
     }
@@ -960,12 +851,9 @@ Instance.declare({
     name = "CameraMode",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readi32(self.Data, O.Player.CameraMode)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writei32(self.Data, O.Player.CameraMode, value)
         end
     }
@@ -977,12 +865,9 @@ Instance.declare({
     name = "Gender",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readi32(self.Data, O.Player.Gender)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writei32(self.Data, O.Player.Gender, value)
         end
     }
@@ -998,12 +883,9 @@ Instance.declare({
     name = "Gravity",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.Workspace.Gravity)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.Workspace.Gravity, value)
         end
     }
@@ -1015,7 +897,6 @@ Instance.declare({
     name = "DistributedGameTime",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf64(self.Data, O.Workspace.DistributedGameTime)
         end
     }
@@ -1031,12 +912,9 @@ Instance.declare({
     name = "Scale",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.Model.Scale)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.Model.Scale, value)
         end
     }
@@ -1052,12 +930,9 @@ Instance.declare({
     name = "MeshId",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readstring(self.Data, O.MeshPart.MeshID)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "string", "Value must be a string")
             memory.writestring(self.Data, O.MeshPart.MeshID, value)
         end
     }
@@ -1069,12 +944,9 @@ Instance.declare({
     name = "TextureID",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readstring(self.Data, O.MeshPart.TextureID)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "string", "Value must be a string")
             memory.writestring(self.Data, O.MeshPart.TextureID, value)
         end
     }
@@ -1090,12 +962,9 @@ Instance.declare({
     name = "MoonAngularSize",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.Sky.MoonAngularSize)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.Sky.MoonAngularSize, value)
         end
     }
@@ -1107,12 +976,9 @@ Instance.declare({
     name = "SunAngularSize",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.Sky.SunAngularSize)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.Sky.SunAngularSize, value)
         end
     }
@@ -1124,12 +990,9 @@ Instance.declare({
     name = "StarCount",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readi32(self.Data, O.Sky.StarCount)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writei32(self.Data, O.Sky.StarCount, value)
         end
     }
@@ -1152,13 +1015,10 @@ for _, face in ipairs(skyboxFaces) do
         name = name,
         callback = {
             get = function(self)
-                assert(self.Data and self.Data ~= 0, "Invalid pointer")
-                return memory.readstring(self.Data, offset)
+                    return memory.readstring(self.Data, offset)
             end,
             set = function(self, value)
-                assert(self.Data and self.Data ~= 0, "Invalid pointer")
-                assert(type(value) == "string", "Value must be a string")
-                memory.writestring(self.Data, offset, value)
+                        memory.writestring(self.Data, offset, value)
             end
         }
     })
@@ -1170,12 +1030,9 @@ Instance.declare({
     name = "SunTextureId",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readstring(self.Data, O.Sky.SunTextureId)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "string", "Value must be a string")
             memory.writestring(self.Data, O.Sky.SunTextureId, value)
         end
     }
@@ -1187,12 +1044,9 @@ Instance.declare({
     name = "MoonTextureId",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readstring(self.Data, O.Sky.MoonTextureId)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "string", "Value must be a string")
             memory.writestring(self.Data, O.Sky.MoonTextureId, value)
         end
     }
@@ -1208,12 +1062,9 @@ Instance.declare({
     name = "MeshId",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readstring(self.Data, O.SpecialMesh.MeshID)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "string", "Value must be a string")
             memory.writestring(self.Data, O.SpecialMesh.MeshID, value)
         end
     }
@@ -1225,12 +1076,9 @@ Instance.declare({
     name = "Scale",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readvector(self.Data, O.SpecialMesh.Scale)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(isVector(value), "Value must be a vector or Vector3")
             local vecToWrite = toVector(value)
             memory.writevector(self.Data, O.SpecialMesh.Scale, vecToWrite)
         end
@@ -1247,12 +1095,9 @@ Instance.declare({
     name = "KeyCode",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readi32(self.Data, O.ProximityPrompt.KeyCode)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writei32(self.Data, O.ProximityPrompt.KeyCode, value)
         end
     }
@@ -1264,12 +1109,9 @@ Instance.declare({
     name = "RequiresLineOfSight",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readu8(self.Data, O.ProximityPrompt.RequiresLineOfSight) ~= 0
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "boolean", "Value must be a boolean")
             memory.writeu8(self.Data, O.ProximityPrompt.RequiresLineOfSight, value and 1 or 0)
         end
     }
@@ -1281,12 +1123,9 @@ Instance.declare({
     name = "HoldDuration",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.ProximityPrompt.HoldDuration)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.ProximityPrompt.HoldDuration, value)
         end
     }
@@ -1298,12 +1137,9 @@ Instance.declare({
     name = "MaxActivationDistance",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.ProximityPrompt.MaxActivationDistance)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.ProximityPrompt.MaxActivationDistance, value)
         end
     }
@@ -1315,12 +1151,9 @@ Instance.declare({
     name = "ActionText",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readstring(self.Data, O.ProximityPrompt.ActionText)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "string", "Value must be a string")
             memory.writestring(self.Data, O.ProximityPrompt.ActionText, value)
         end
     }
@@ -1332,12 +1165,9 @@ Instance.declare({
     name = "ObjectText",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readstring(self.Data, O.ProximityPrompt.ObjectText)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "string", "Value must be a string")
             memory.writestring(self.Data, O.ProximityPrompt.ObjectText, value)
         end
     }
@@ -1349,12 +1179,9 @@ Instance.declare({
     name = "Enabled",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readu8(self.Data, O.ProximityPrompt.Enabled) ~= 0
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "boolean", "Value must be a boolean")
             memory.writeu8(self.Data, O.ProximityPrompt.Enabled, value and 1 or 0)
         end
     }
@@ -1370,12 +1197,9 @@ Instance.declare({
     name = "MouseIcon",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readstring(self.Data, O.ClickDetector.MouseIcon)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "string", "Value must be a string")
             memory.writestring(self.Data, O.ClickDetector.MouseIcon, value)
         end
     }
@@ -1387,12 +1211,9 @@ Instance.declare({
     name = "MaxActivationDistance",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.ClickDetector.MaxActivationDistance)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.ClickDetector.MaxActivationDistance, value)
         end
     }
@@ -1408,12 +1229,9 @@ Instance.declare({
     name = "BackgroundColor3",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readvector(self.Data, O.GuiObject.BackgroundColor3)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
             local vecToWrite = toColorVector(value)
             memory.writevector(self.Data, O.GuiObject.BackgroundColor3, vecToWrite)
         end
@@ -1426,12 +1244,9 @@ Instance.declare({
     name = "BorderColor3",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readvector(self.Data, O.GuiObject.BorderColor3)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
             local vecToWrite = toColorVector(value)
             memory.writevector(self.Data, O.GuiObject.BorderColor3, vecToWrite)
         end
@@ -1444,12 +1259,9 @@ Instance.declare({
     name = "Visible",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readu8(self.Data, O.GuiObject.Visible) ~= 0
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "boolean", "Value must be a boolean")
             memory.writeu8(self.Data, O.GuiObject.Visible, value and 1 or 0)
         end
     }
@@ -1461,12 +1273,9 @@ Instance.declare({
     name = "Rotation",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readf32(self.Data, O.GuiObject.Rotation)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writef32(self.Data, O.GuiObject.Rotation, value)
         end
     }
@@ -1478,12 +1287,9 @@ Instance.declare({
     name = "LayoutOrder",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readi32(self.Data, O.GuiObject.LayoutOrder)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "number", "Value must be a number")
             memory.writei32(self.Data, O.GuiObject.LayoutOrder, value)
         end
     }
@@ -1492,15 +1298,12 @@ Instance.declare({
 -- Text (for TextLabel, TextButton, TextBox)
 Instance.declare({
     class = ClassGroups.TextElements,
-    name = "Text",
+    name = "Textt",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readstring(self.Data, O.TextLabel.Text)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "string", "Value must be a string")
             memory.writestring(self.Data, O.TextLabel.Text, value)
         end
     }
@@ -1512,12 +1315,9 @@ Instance.declare({
     name = "TextColor3",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readvector(self.Data, O.TextLabel.TextColor3)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(isColor(value), "Value must be a Color3, Vector3, or vector")
             local vecToWrite = toColorVector(value)
             memory.writevector(self.Data, O.TextLabel.TextColor3, vecToWrite)
         end
@@ -1530,12 +1330,9 @@ Instance.declare({
     name = "RichText",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readu8(self.Data, O.TextLabel.RichText) ~= 0
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "boolean", "Value must be a boolean")
             memory.writeu8(self.Data, O.TextLabel.RichText, value and 1 or 0)
         end
     }
@@ -1547,12 +1344,9 @@ Instance.declare({
     name = "Image",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readstring(self.Data, O.ImageLabel.Image)
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "string", "Value must be a string")
             memory.writestring(self.Data, O.ImageLabel.Image, value)
         end
     }
@@ -1568,12 +1362,9 @@ Instance.declare({
     name = "Enabled",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readu8(self.Data, O.ScreenGui.Enabled) ~= 0
         end,
         set = function(self, value)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
-            assert(type(value) == "boolean", "Value must be a boolean")
             memory.writeu8(self.Data, O.ScreenGui.Enabled, value and 1 or 0)
         end
     }
@@ -1589,7 +1380,6 @@ Instance.declare({
     name = "CreatorId",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readi64(self.Data, O.DataModel.CreatorId)
         end
     }
@@ -1601,7 +1391,6 @@ Instance.declare({
     name = "PlaceVersion",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readi32(self.Data, O.DataModel.PlaceVersion)
         end
     }
@@ -1613,15 +1402,11 @@ Instance.declare({
     name = "ServerIP",
     callback = {
         get = function(self)
-            assert(self.Data and self.Data ~= 0, "Invalid pointer")
             return memory.readstring(self.Data, O.DataModel.ServerIP)
         end
     }
 })
 
--- ═══════════════════════════════════════════════════════════
--- SECTION 22: CFRAME METHODS
--- ═══════════════════════════════════════════════════════════
 
 local function createCFrameTable(pos, right, up, look)
     return {
@@ -1961,48 +1746,68 @@ Instance.declare({
         method = function(self, goal, alpha)
             assert(goal, "Goal CFrame required")
             assert(type(alpha) == "number", "Alpha must be a number")
-            
-            local p0 = self.Position
-            local p1 = goal.Position
+            alpha = math.max(0, math.min(1, alpha))
             
             -- Lerp position
+            local p0 = self.Position
+            local p1 = goal.Position
             local newPos = vector.create(
                 p0.X + (p1.X - p0.X) * alpha,
                 p0.Y + (p1.Y - p0.Y) * alpha,
                 p0.Z + (p1.Z - p0.Z) * alpha
             )
             
-            -- Lerp rotation vectors
+            -- Slerp rotation using axis-angle
+            local relative = self:Inverse():ToWorldSpace(goal)
+            local axis, angle = relative:ToAxisAngle()
+            
+            if angle < 0.0001 then
+                -- No rotation needed
+                return createCFrameTable(newPos, self.RightVector, self.UpVector, self.LookVector)
+            end
+            
+            -- Scale the angle by alpha
+            local scaledAngle = angle * alpha
+            local c = math.cos(scaledAngle)
+            local s = math.sin(scaledAngle)
+            local t = 1 - c
+            
+            local x, y, z = axis.X, axis.Y, axis.Z
+            
+            -- Rodrigues' rotation formula to build rotation matrix
+            local rotMatrix = {
+                {t*x*x + c,    t*x*y - s*z,  t*x*z + s*y},
+                {t*x*y + s*z,  t*y*y + c,    t*y*z - s*x},
+                {t*x*z - s*y,  t*y*z + s*x,  t*z*z + c}
+            }
+            
+            -- Apply rotation to self's orientation
             local r0 = self.RightVector
-            local r1 = goal.RightVector
             local u0 = self.UpVector
-            local u1 = goal.UpVector
             local l0 = self.LookVector
-            local l1 = goal.LookVector
             
             local newRight = vector.create(
-                r0.X + (r1.X - r0.X) * alpha,
-                r0.Y + (r1.Y - r0.Y) * alpha,
-                r0.Z + (r1.Z - r0.Z) * alpha
+                rotMatrix[1][1]*r0.X + rotMatrix[1][2]*u0.X + rotMatrix[1][3]*l0.X,
+                rotMatrix[1][1]*r0.Y + rotMatrix[1][2]*u0.Y + rotMatrix[1][3]*l0.Y,
+                rotMatrix[1][1]*r0.Z + rotMatrix[1][2]*u0.Z + rotMatrix[1][3]*l0.Z
             )
             
             local newUp = vector.create(
-                u0.X + (u1.X - u0.X) * alpha,
-                u0.Y + (u1.Y - u0.Y) * alpha,
-                u0.Z + (u1.Z - u0.Z) * alpha
+                rotMatrix[2][1]*r0.X + rotMatrix[2][2]*u0.X + rotMatrix[2][3]*l0.X,
+                rotMatrix[2][1]*r0.Y + rotMatrix[2][2]*u0.Y + rotMatrix[2][3]*l0.Y,
+                rotMatrix[2][1]*r0.Z + rotMatrix[2][2]*u0.Z + rotMatrix[2][3]*l0.Z
             )
             
             local newLook = vector.create(
-                l0.X + (l1.X - l0.X) * alpha,
-                l0.Y + (l1.Y - l0.Y) * alpha,
-                l0.Z + (l1.Z - l0.Z) * alpha
+                rotMatrix[3][1]*r0.X + rotMatrix[3][2]*u0.X + rotMatrix[3][3]*l0.X,
+                rotMatrix[3][1]*r0.Y + rotMatrix[3][2]*u0.Y + rotMatrix[3][3]*l0.Y,
+                rotMatrix[3][1]*r0.Z + rotMatrix[3][2]*u0.Z + rotMatrix[3][3]*l0.Z
             )
             
             return createCFrameTable(newPos, newRight, newUp, newLook)
         end
     }
 })
-
 -- CFrame:Orthonormalize()
 Instance.declare({
     class = "CFrame",
@@ -2082,7 +1887,6 @@ Instance.declare({
     }
 })
 
--- CFrame:AngleBetween()
 Instance.declare({
     class = "CFrame",
     name = "AngleBetween",
@@ -2090,18 +1894,14 @@ Instance.declare({
         method = function(self, other)
             assert(other, "Other CFrame required")
             
-            local l0 = self.LookVector
-            local l1 = other.LookVector
+            -- Compute relative rotation
+            local relative = self:Inverse():ToWorldSpace(other)
+            local _, angle = relative:ToAxisAngle()
             
-            local dot = l0.X * l1.X + l0.Y * l1.Y + l0.Z * l1.Z
-            dot = math.max(-1, math.min(1, dot))
-            
-            return math.acos(dot)
+            return angle
         end
     }
 })
-
-
 -- ═══════════════════════════════════════════════════════════
 -- SECTION 23: MODEL METHODS
 -- ═══════════════════════════════════════════════════════════
@@ -2282,8 +2082,6 @@ registerIsA({"UIGradient", "UIGridLayout", "UIListLayout", "UIPageLayout", "UISc
 
 print("loaded")
 
-
-
 --!optimization 2
 
 -- ═══════════════════════════════════════════════════════════
@@ -2418,20 +2216,157 @@ local function interpolateVector(startVec, endVec, alpha)
     )
 end
 
+--!optimization 2
+
+-- ═══════════════════════════════════════════════════════════
+-- FIXED CFRAME INTERPOLATION WITH QUATERNION SLERP
+-- ═══════════════════════════════════════════════════════════
+
+-- Add this to your utility functions section
+local function quaternionFromCFrame(cf)
+    local trace = cf.RightVector.X + cf.UpVector.Y + cf.LookVector.Z
+    
+    if trace > 0 then
+        local s = math.sqrt(1 + trace) * 2
+        return {
+            w = 0.25 * s,
+            x = (cf.UpVector.Z - cf.LookVector.Y) / s,
+            y = (cf.LookVector.X - cf.RightVector.Z) / s,
+            z = (cf.RightVector.Y - cf.UpVector.X) / s
+        }
+    elseif cf.RightVector.X > cf.UpVector.Y and cf.RightVector.X > cf.LookVector.Z then
+        local s = math.sqrt(1 + cf.RightVector.X - cf.UpVector.Y - cf.LookVector.Z) * 2
+        return {
+            w = (cf.UpVector.Z - cf.LookVector.Y) / s,
+            x = 0.25 * s,
+            y = (cf.UpVector.X + cf.RightVector.Y) / s,
+            z = (cf.LookVector.X + cf.RightVector.Z) / s
+        }
+    elseif cf.UpVector.Y > cf.LookVector.Z then
+        local s = math.sqrt(1 + cf.UpVector.Y - cf.RightVector.X - cf.LookVector.Z) * 2
+        return {
+            w = (cf.LookVector.X - cf.RightVector.Z) / s,
+            x = (cf.UpVector.X + cf.RightVector.Y) / s,
+            y = 0.25 * s,
+            z = (cf.LookVector.Y + cf.UpVector.Z) / s
+        }
+    else
+        local s = math.sqrt(1 + cf.LookVector.Z - cf.RightVector.X - cf.UpVector.Y) * 2
+        return {
+            w = (cf.RightVector.Y - cf.UpVector.X) / s,
+            x = (cf.LookVector.X + cf.RightVector.Z) / s,
+            y = (cf.LookVector.Y + cf.UpVector.Z) / s,
+            z = 0.25 * s
+        }
+    end
+end
+
+local function quaternionToRotationMatrix(q)
+    local qx, qy, qz, qw = q.x, q.y, q.z, q.w
+    
+    -- Calculate rotation matrix components
+    local x2 = qx + qx
+    local y2 = qy + qy
+    local z2 = qz + qz
+    
+    local xx2 = qx * x2
+    local xy2 = qx * y2
+    local xz2 = qx * z2
+    
+    local yy2 = qy * y2
+    local yz2 = qy * z2
+    local zz2 = qz * z2
+    
+    local wx2 = qw * x2
+    local wy2 = qw * y2
+    local wz2 = qw * z2
+    
+    -- Build rotation vectors
+    local right = vector.create(
+        1 - (yy2 + zz2),
+        xy2 + wz2,
+        xz2 - wy2
+    )
+    
+    local up = vector.create(
+        xy2 - wz2,
+        1 - (xx2 + zz2),
+        yz2 + wx2
+    )
+    
+    local look = vector.create(
+        xz2 + wy2,
+        yz2 - wx2,
+        1 - (xx2 + yy2)
+    )
+    
+    return right, up, look
+end
+
+local function quaternionSlerp(q1, q2, alpha)
+    -- Compute dot product
+    local dot = q1.x * q2.x + q1.y * q2.y + q1.z * q2.z + q1.w * q2.w
+    
+    -- If dot is negative, negate one quaternion to take shorter path
+    local q2_adjusted = q2
+    if dot < 0 then
+        q2_adjusted = {x = -q2.x, y = -q2.y, z = -q2.z, w = -q2.w}
+        dot = -dot
+    end
+    
+    -- Clamp dot to avoid numerical errors
+    dot = math.clamp(dot, -1, 1)
+    
+    -- If quaternions are very close, use linear interpolation
+    if dot > 0.9995 then
+        local result = {
+            x = q1.x + alpha * (q2_adjusted.x - q1.x),
+            y = q1.y + alpha * (q2_adjusted.y - q1.y),
+            z = q1.z + alpha * (q2_adjusted.z - q1.z),
+            w = q1.w + alpha * (q2_adjusted.w - q1.w)
+        }
+        
+        -- Normalize
+        local len = math.sqrt(result.x * result.x + result.y * result.y + 
+                              result.z * result.z + result.w * result.w)
+        if len > 0 then
+            result.x = result.x / len
+            result.y = result.y / len
+            result.z = result.z / len
+            result.w = result.w / len
+        end
+        
+        return result
+    end
+    
+    -- Calculate angle and perform slerp
+    local theta = math.acos(dot)
+    local sinTheta = math.sin(theta)
+    
+    local scale1 = math.sin((1 - alpha) * theta) / sinTheta
+    local scale2 = math.sin(alpha * theta) / sinTheta
+    
+    return {
+        x = scale1 * q1.x + scale2 * q2_adjusted.x,
+        y = scale1 * q1.y + scale2 * q2_adjusted.y,
+        z = scale1 * q1.z + scale2 * q2_adjusted.z,
+        w = scale1 * q1.w + scale2 * q2_adjusted.w
+    }
+end
+
 local function interpolateCFrame(cf1, cf2, alpha)
-    -- Check for nil
+    -- Validate inputs
     if not cf1 or not cf2 then
         warn("[TweenService] interpolateCFrame: nil CFrame detected")
         return cf1 or cf2
     end
     
-    -- Check for required fields
     if not cf1.Position or not cf2.Position then
         warn("[TweenService] interpolateCFrame: CFrame missing Position")
         return cf2
     end
     
-    -- Position interpolation
+    -- Interpolate position (simple linear)
     local p1 = cf1.Position
     local p2 = cf2.Position
     local newPos = vector.create(
@@ -2440,34 +2375,28 @@ local function interpolateCFrame(cf1, cf2, alpha)
         p1.Z + (p2.Z - p1.Z) * alpha
     )
     
-    -- Directly lerp the rotation vectors
-    local r1 = cf1.RightVector or vector.create(1, 0, 0)
-    local r2 = cf2.RightVector or vector.create(1, 0, 0)
-    local u1 = cf1.UpVector or vector.create(0, 1, 0)
-    local u2 = cf2.UpVector or vector.create(0, 1, 0)
-    local l1 = cf1.LookVector or vector.create(0, 0, 1)
-    local l2 = cf2.LookVector or vector.create(0, 0, 1)
+    -- Convert CFrames to quaternions (keep this for smooth rotation)
+    local q1 = quaternionFromCFrame(cf1)
+    local q2 = quaternionFromCFrame(cf2)
     
-    local newRight = vector.create(
-        r1.X + (r2.X - r1.X) * alpha,
-        r1.Y + (r2.Y - r1.Y) * alpha,
-        r1.Z + (r2.Z - r1.Z) * alpha
-    )
+    -- Slerp between quaternions
+    local qResult = quaternionSlerp(q1, q2, alpha)
     
-    local newUp = vector.create(
-        u1.X + (u2.X - u1.X) * alpha,
-        u1.Y + (u2.Y - u1.Y) * alpha,
-        u1.Z + (u2.Z - u1.Z) * alpha
-    )
+    -- Convert quaternion back to rotation matrix
+    local right, up, look = quaternionToRotationMatrix(qResult)
     
-    local newLook = vector.create(
-        l1.X + (l2.X - l1.X) * alpha,
-        l1.Y + (l2.Y - l1.Y) * alpha,
-        l1.Z + (l2.Z - l1.Z) * alpha 
-    )
-    
-    -- Use CFrame.fromMatrix
-    return CFrame.fromMatrix(newPos, newRight, newUp, newLook)
+    -- ✅ FIX: Use CFrame.lookAt instead of CFrame.fromMatrix!
+    -- Calculate the forward direction point
+   local fixedLook = vector.create(-look.X, -look.Y, -look.Z)
+
+-- Use the negated look to build the lookAt point
+local lookAtPoint = vector.create(
+    newPos.X + fixedLook.X,
+    newPos.Y + fixedLook.Y,
+    newPos.Z + fixedLook.Z
+)
+
+return CFrame.lookAt(newPos, lookAtPoint, up)
 end
 
 local function interpolateTable(startTable, endTable, alpha)
@@ -2912,15 +2841,20 @@ function Tween.new(instance, tweenInfo, properties)
     end
     
     -- Normalize target values
-    for propName, targetValue in pairs(properties) do
-        if isCFrameType(targetValue) then
-            -- Don't normalize CFrames, keep them as-is
-            self.Properties[propName] = targetValue
-        elseif isVectorType(targetValue) then
-            local vec = toUnifiedVector(targetValue)
-            self.Properties[propName] = {type = "Vector", X = vec.X, Y = vec.Y, Z = vec.Z}
-        end
+   for propName, targetValue in pairs(properties) do
+    if isCFrameType(targetValue) then
+        self.Properties[propName] = {
+            type = "CFrame",
+            Position = targetValue.Position,
+            RightVector = targetValue.RightVector,
+            UpVector = targetValue.UpVector,
+            LookVector = targetValue.LookVector
+        }
+    elseif isVectorType(targetValue) then
+        local vec = toUnifiedVector(targetValue)
+        self.Properties[propName] = {type = "Vector", X = vec.X, Y = vec.Y, Z = vec.Z}
     end
+end
     
     -- Event system
     self.Completed = {
@@ -3038,14 +2972,16 @@ function Tween:Cancel()
     end
 end
 
+--!optimization 2
+
 function Tween:_step(deltaTime)
     if not self._isActive then
         return false
     end
     
     self._elapsedTime = self._elapsedTime + deltaTime
-    
     local tweenInfo = self.TweenInfo
+    
     if not tweenInfo then
         warn("[TweenService] TweenInfo is missing")
         return false
@@ -3061,14 +2997,32 @@ function Tween:_step(deltaTime)
     local totalIterations = tweenInfo.RepeatCount == 0 and 1 or tweenInfo.RepeatCount
     local totalDuration = duration * totalIterations
     
-    -- Check if animation is complete
+    -- ✅ Check if animation is complete FIRST
     if adjustedTime >= totalDuration then
-        -- Set final values
+        -- Set final values with exact target (alpha = 1.0)
         local success = pcall(function()
             for propName, targetValue in pairs(self.Properties) do
                 if type(targetValue) == "table" and targetValue.type == "Vector" then
+                    -- Vector: final value
                     self.Instance[propName] = vector.create(targetValue.X, targetValue.Y, targetValue.Z)
-                else
+                    
+                elseif type(targetValue) == "table" and targetValue.Position and targetValue.LookVector then
+                    -- CFrame: Use CFrame.lookAt for final value
+                    local pos = targetValue.Position
+                    local look = targetValue.LookVector
+                    local up = targetValue.UpVector
+                    
+                    local fixedLook = vector.create(-look.X, -look.Y, -look.Z)
+
+    local lookAtPoint = vector.create(
+        pos.X + fixedLook.X,
+        pos.Y + fixedLook.Y,
+        pos.Z + fixedLook.Z
+    )
+
+    self.Instance[propName] = CFrame.lookAt(pos, lookAtPoint, up)
+                     else
+                    -- Other types: direct assignment
                     self.Instance[propName] = targetValue
                 end
             end
@@ -3089,7 +3043,6 @@ function Tween:_step(deltaTime)
     
     -- Calculate progress within current iteration
     local iterationProgress = (adjustedTime % duration) / duration
-    
     if self._playbackDirection == -1 then
         iterationProgress = 1 - iterationProgress
     end
@@ -3098,46 +3051,42 @@ function Tween:_step(deltaTime)
     local easingFunc = getEasingFunction(tweenInfo.EasingStyle, tweenInfo.EasingDirection)
     local alpha = easingFunc(iterationProgress)
     
-    -- Update properties
+    -- Update properties during animation
     for propName, targetValue in pairs(self.Properties) do
         if self._originalValues[propName] ~= nil then
             local originalValue = self._originalValues[propName]
-            
             local success = pcall(function()
                 if type(originalValue) == "table" and originalValue.type == "Vector" then
                     -- Vector interpolation
                     local startVec = vector.create(originalValue.X, originalValue.Y, originalValue.Z)
                     local endVec
-                    
                     if type(targetValue) == "table" and targetValue.type == "Vector" then
                         endVec = vector.create(targetValue.X, targetValue.Y, targetValue.Z)
                     else
                         endVec = toUnifiedVector(targetValue)
                     end
-                    
                     local resultVec = interpolateVector(startVec, endVec, alpha)
                     self.Instance[propName] = resultVec
                     
                 elseif isCFrameType(originalValue) then
--- CFrame interpolation
-    local success2, resultCF = pcall(function()
-        return interpolateCFrame(originalValue, targetValue, alpha)
-    end)
-    
-    if not success2 then
-        warn("[TweenService] interpolateCFrame failed:", resultCF)
-    else
-        local success3, err = pcall(function()
-            self.Instance[propName] = resultCF
-        end)
-        
-        if not success3 then
-            warn("[TweenService] Failed to SET CFrame:", err)
-            warn("[TweenService] resultCF type:", type(resultCF))
-            warn("[TweenService] resultCF:", resultCF)
-        end
-    end
-
+                    -- CFrame interpolation
+                    local success2, resultCF = pcall(function()
+                        return interpolateCFrame(originalValue, targetValue, alpha)
+                    end)
+                    
+                    if not success2 then
+                        warn("[TweenService] interpolateCFrame failed:", resultCF)
+                    elseif resultCF and resultCF.Position then
+                        local success3, err = pcall(function()
+                            self.Instance[propName] = resultCF
+                        end)
+                        
+                        if not success3 then
+                            warn("[TweenService] Failed to SET CFrame:", err)
+                        end
+                    else
+                        warn("[TweenService] Invalid CFrame result, skipping frame")
+                    end
                     
                 elseif type(originalValue) == "table" and type(targetValue) == "table" then
                     -- Table interpolation
@@ -3147,6 +3096,7 @@ function Tween:_step(deltaTime)
                 elseif type(originalValue) == "number" and type(targetValue) == "number" then
                     -- Number interpolation
                     self.Instance[propName] = interpolateNumber(originalValue, targetValue, alpha)
+                    
                 else
                     -- Direct assignment
                     self.Instance[propName] = targetValue
@@ -3187,6 +3137,7 @@ function Tween:_step(deltaTime)
     
     return true
 end
+
 
 -- ═══════════════════════════════════════════════════════════
 -- SECTION 7: ANIMATION REGISTRY & UPDATE LOOP
@@ -3336,7 +3287,6 @@ Instance.declare({
       --  end
   --  }
 --})
-print("TweenService loaded")
 
 return TweenService
 
