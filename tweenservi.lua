@@ -773,17 +773,7 @@ function Tween.new(instance, tweenInfo, properties)
 end
     
     -- Event system
-    self.Completed = {
-        Connect = function(_, callback)
-            assert(type(callback) == "function", "[TweenService] Completed callback must be a function")
-            self._onFinishCallback = callback
-            return {
-                Disconnect = function()
-                    self._onFinishCallback = nil
-                end
-            }
-        end
-    }
+    self.Completed = Signal.new()
     
     return self
 end
@@ -950,8 +940,8 @@ function Tween:_step(deltaTime)
         
         self:Stop()
         
-        if self._onFinishCallback then
-            pcall(self._onFinishCallback)
+        if self.Completed then
+            self.Completed:Fire()
         end
         
         return false
@@ -1043,8 +1033,8 @@ function Tween:_step(deltaTime)
         if shouldComplete then
             self:Stop()
             
-            if self._onFinishCallback then
-                pcall(self._onFinishCallback)
+            if self.Completed then
+                self.Completed:Fire()
             end
             
             return false
@@ -1205,3 +1195,4 @@ Instance.declare({
 --})
 
 return TweenService
+
