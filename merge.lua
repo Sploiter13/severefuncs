@@ -3476,14 +3476,16 @@ function InstanceEventService:GetSignal(instance, eventType)
         end
         
         if childrenEndPtrAddr and childrenEndPtrAddr > 0 then
-            table.insert(watcherData.Cleanups, memory.changed(childrenEndPtrAddr, "u64", function() pcall(CheckChanges) end))
+            local conn = memory.changed(childrenEndPtrAddr, "u64", function() pcall(CheckChanges) end)
+            if conn then table.insert(watcherData.Cleanups, conn) end
         end
         
         if childrenListStart and childrenListStart > 0 then
-            table.insert(watcherData.Cleanups, memory.changed(childrenListStart, "u64", function() pcall(CheckChanges) end))
+            local conn = memory.changed(childrenListStart, "u64", function() pcall(CheckChanges) end)
+            if conn then table.insert(watcherData.Cleanups, conn) end
         end
         
-        table.insert(watcherData.Cleanups, memory.changed(dataAddr + 0x70, "u64", function()
+        local conn = memory.changed(dataAddr + 0x70, "u64", function()
             pcall(function()
                 childrenStartPtr = memory.readu64(dataAddr + 0x70)
                 if childrenStartPtr and childrenStartPtr > 0 then
@@ -3492,7 +3494,8 @@ function InstanceEventService:GetSignal(instance, eventType)
                 end
                 CheckChanges()
             end)
-        end))
+        end)
+        if conn then table.insert(watcherData.Cleanups, conn) end
     end
     
     return self._watchedInstances[instance].Signals[eventType]
