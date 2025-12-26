@@ -2663,6 +2663,437 @@ print("loaded")
 --!native
 --!optimize 2
 
+---- Environment ----
+local getpressedkeys = getpressedkeys
+local isleftpressed = isleftpressed
+local isrightpressed = isrightpressed
+local getmouseposition = getmouseposition
+local isrbxactive = isrbxactive
+local task_spawn = task.spawn
+local task_wait = task.wait
+
+---- Constants ----
+local UPDATE_RATE = 1 / 240
+
+local KeyNameToKeyCode = {
+    A = 97, B = 98, C = 99, D = 100, E = 101, F = 102, G = 103, H = 104,
+    I = 105, J = 106, K = 107, L = 108, M = 109, N = 110, O = 111, P = 112,
+    Q = 113, R = 114, S = 115, T = 116, U = 117, V = 118, W = 119, X = 120,
+    Y = 121, Z = 122,
+    
+    -- Numbers
+    ["0"] = 48, ["1"] = 49, ["2"] = 50, ["3"] = 51, ["4"] = 52,
+    ["5"] = 53, ["6"] = 54, ["7"] = 55, ["8"] = 56, ["9"] = 57,
+    
+    -- Function keys
+    F1 = 282, F2 = 283, F3 = 284, F4 = 285, F5 = 286, F6 = 287,
+    F7 = 288, F8 = 289, F9 = 290, F10 = 291, F11 = 292, F12 = 293,
+    
+    -- Special keys
+    Space = 32,
+    Backspace = 8,
+    Tab = 9,
+    Return = 13,
+    Enter = 13,
+    Escape = 27,
+    Delete = 127,
+    
+    -- Modifiers
+    LeftShift = 304,
+    RightShift = 303,
+    LeftControl = 306,
+    RightControl = 305,
+    LeftAlt = 308,
+    RightAlt = 307,
+    CapsLock = 301,
+    
+    -- Arrow keys
+    Up = 273,
+    Down = 274,
+    Left = 276,
+    Right = 275,
+    
+    -- Navigation
+    Insert = 277,
+    Home = 278,
+    End = 279,
+    PageUp = 280,
+    PageDown = 281,
+    
+    -- Punctuation
+    LeftBracket = 91,
+    RightBracket = 93,
+    BackSlash = 92,
+    Slash = 47,
+    Period = 46,
+    Comma = 44,
+    Quote = 39,
+    Semicolon = 59,
+    Minus = 45,
+    Equals = 61,
+    Backquote = 96,
+    
+    LeftMouse = 0,
+    RightMouse = 0,
+    MiddleMouse = 0,
+}
+
+local function convertKeyNameToKeyCode(keyName)
+    if type(keyName) == "number" then
+        return keyName
+    end
+    return KeyNameToKeyCode[keyName] or 0
+end
+
+local RobloxSignal = {}
+RobloxSignal.__index = RobloxSignal
+
+function RobloxSignal.new()
+    return setmetatable({_signal = Signal.new()}, RobloxSignal)
+end
+
+function RobloxSignal:Connect(callback)
+    local conn = self._signal:connect(callback)
+    return {
+        Connected = true,
+        Disconnect = function(self)
+            if self.Connected then
+                conn:disconnect()
+                self.Connected = false
+            end
+        end
+    }
+end
+
+function RobloxSignal:Fire(...)
+    self._signal:fire(...)
+end
+
+function RobloxSignal:Wait()
+    return self._signal:wait()
+end
+
+---- InputObject Class ----
+local InputObject = {}
+InputObject.__index = InputObject
+
+function InputObject.new(inputType, keyCode, userInputState, delta, position)
+    return setmetatable({
+        UserInputType = inputType,
+        KeyCode = keyCode,
+        UserInputState = userInputState,
+        Delta = delta or vector.create(0, 0, 0),
+        Position = position or vector.create(0, 0, 0)
+    }, InputObject)
+end
+
+---- State ----
+local previousKeys = {}
+local previousMouse1, previousMouse2 = false, false
+local previousMousePosition = vector.create(0, 0, 0)
+local previousWindowFocused = true
+
+local InputBegan = RobloxSignal.new()
+local InputEnded = RobloxSignal.new()
+local InputChanged = RobloxSignal.new()
+local WindowFocusReleased = RobloxSignal.new()
+local WindowFocused = RobloxSignal.new()
+
+---- Process Input ----
+local function processInput()
+    local currentKeyNames = getpressedkeys()  
+    local currentMouse1 = isleftpressed()
+    local currentMouse2 = isrightpressed()
+    local currentMousePos = getmouseposition()
+    local currentWindowFocused = isrbxactive()
+    
+    local currentKeysMap = {}
+    for _, keyName in ipairs(currentKeyNames) do
+        if keyName ~= "LeftMouse" and keyName ~= "RightMouse" and keyName ~= "MiddleMouse" then
+            local keyCode = convertKeyNameToKeyCode(keyName)
+            if keyCode ~= 0 then
+                currentKeysMap[keyCode] = true
+                
+                if not previousKeys[keyCode] then
+                    InputBegan:Fire(
+                        InputObject.new(
+                            Enum.UserInputType.Keyboard,
+                            keyCode,
+                            Enum.UserInputState.Begin,
+                            vector.create(0, 0, 0),
+                            currentMousePos
+                        ),
+                        false
+                    )
+                end
+            end
+        end
+    end
+    
+    for keyCode, _ in pairs(previousKeys) do
+        if not currentKeysMap[keyCode] then
+            InputEnded:Fire(
+                InputObject.new(
+                    Enum.UserInputType.Keyboard,
+                    keyCode,
+                    Enum.UserInputState.End,
+                    vector.create(0, 0, 0),
+                    currentMousePos
+                ),
+                false
+            )
+        end
+    end
+    
+    previousKeys = currentKeysMap
+    
+    if currentMouse1 ~= previousMouse1 then
+        if currentMouse1 then
+            InputBegan:Fire(
+                InputObject.new(
+                    Enum.UserInputType.MouseButton1,
+                    Enum.KeyCode.Unknown,
+                    Enum.UserInputState.Begin,
+                    vector.create(0, 0, 0),
+                    currentMousePos
+                ),
+                false
+            )
+        else
+            InputEnded:Fire(
+                InputObject.new(
+                    Enum.UserInputType.MouseButton1,
+                    Enum.KeyCode.Unknown,
+                    Enum.UserInputState.End,
+                    vector.create(0, 0, 0),
+                    currentMousePos
+                ),
+                false
+            )
+        end
+        previousMouse1 = currentMouse1
+    end
+    
+    if currentMouse2 ~= previousMouse2 then
+        if currentMouse2 then
+            InputBegan:Fire(
+                InputObject.new(
+                    Enum.UserInputType.MouseButton2,
+                    Enum.KeyCode.Unknown,
+                    Enum.UserInputState.Begin,
+                    vector.create(0, 0, 0),
+                    currentMousePos
+                ),
+                false
+            )
+        else
+            InputEnded:Fire(
+                InputObject.new(
+                    Enum.UserInputType.MouseButton2,
+                    Enum.KeyCode.Unknown,
+                    Enum.UserInputState.End,
+                    vector.create(0, 0, 0),
+                    currentMousePos
+                ),
+                false
+            )
+        end
+        previousMouse2 = currentMouse2
+    end
+    
+    if currentMousePos.X ~= previousMousePosition.X or currentMousePos.Y ~= previousMousePosition.Y then
+        local delta = vector.create(
+            currentMousePos.X - previousMousePosition.X,
+            currentMousePos.Y - previousMousePosition.Y,
+            0
+        )
+        InputChanged:Fire(
+            InputObject.new(
+                Enum.UserInputType.MouseMovement,
+                Enum.KeyCode.Unknown,
+                Enum.UserInputState.Change,
+                delta,
+                currentMousePos
+            ),
+            false
+        )
+        previousMousePosition = currentMousePos
+    end
+    
+    if currentWindowFocused ~= previousWindowFocused then
+        if currentWindowFocused then
+            WindowFocused:Fire()
+        else
+            WindowFocusReleased:Fire()
+        end
+        previousWindowFocused = currentWindowFocused
+    end
+end
+
+---- Start Loop ----
+previousMouse1 = isleftpressed()
+previousMouse2 = isrightpressed()
+previousMousePosition = getmouseposition()
+previousWindowFocused = isrbxactive()
+
+task_spawn(function()
+    while true do
+        pcall(processInput)
+        task_wait(UPDATE_RATE)
+    end
+end)
+
+---- Declare Methods ----
+Instance.declare({
+    class = "Instance",
+    name = "IsKeyDown",
+    callback = {
+        method = function(self, keyCode)
+            local pressedKeyNames = getpressedkeys()
+            for _, keyName in ipairs(pressedKeyNames) do
+                if convertKeyNameToKeyCode(keyName) == keyCode then
+                    return true
+                end
+            end
+            return false
+        end
+    }
+})
+
+Instance.declare({
+    class = "Instance",
+    name = "IsMouseButtonPressed",
+    callback = {
+        method = function(self, mouseButton)
+            if mouseButton == 0 then
+                return isleftpressed()
+            elseif mouseButton == 1 then
+                return isrightpressed()
+            end
+            return false
+        end
+    }
+})
+
+Instance.declare({
+    class = "Instance",
+    name = "GetKeysPressed",
+    callback = {
+        method = function(self)
+            local pressedKeyNames = getpressedkeys()
+            local inputObjects = {}
+            for _, keyName in ipairs(pressedKeyNames) do
+                if keyName ~= "LeftMouse" and keyName ~= "RightMouse" and keyName ~= "MiddleMouse" then
+                    local keyCode = convertKeyNameToKeyCode(keyName)
+                    if keyCode ~= 0 then
+                        table.insert(inputObjects, InputObject.new(
+                            Enum.UserInputType.Keyboard,
+                            keyCode,
+                            Enum.UserInputState.Begin,
+                            vector.create(0, 0, 0),
+                            vector.create(0, 0, 0)
+                        ))
+                    end
+                end
+            end
+            return inputObjects
+        end
+    }
+})
+
+Instance.declare({
+    class = "Instance",
+    name = "GetMouseButtonsPressed",
+    callback = {
+        method = function(self)
+            local buttons = {}
+            if isleftpressed() then
+                table.insert(buttons, InputObject.new(
+                    Enum.UserInputType.MouseButton1,
+                    Enum.KeyCode.Unknown,
+                    Enum.UserInputState.Begin,
+                    vector.create(0, 0, 0),
+                    getmouseposition()
+                ))
+            end
+            if isrightpressed() then
+                table.insert(buttons, InputObject.new(
+                    Enum.UserInputType.MouseButton2,
+                    Enum.KeyCode.Unknown,
+                    Enum.UserInputState.Begin,
+                    vector.create(0, 0, 0),
+                    getmouseposition()
+                ))
+            end
+            return buttons
+        end
+    }
+})
+
+Instance.declare({
+    class = "Instance",
+    name = "GetMouseLocation",
+    callback = {
+        method = function(self)
+            return getmouseposition()
+        end
+    }
+})
+
+Instance.declare({
+    class = "Instance",
+    name = "InputBegan",
+    callback = {
+        get = function(self)
+            return InputBegan
+        end
+    }
+})
+
+Instance.declare({
+    class = "Instance",
+    name = "InputEnded",
+    callback = {
+        get = function(self)
+            return InputEnded
+        end
+    }
+})
+
+Instance.declare({
+    class = "Instance",
+    name = "InputChanged",
+    callback = {
+        get = function(self)
+            return InputChanged
+        end
+    }
+})
+
+Instance.declare({
+    class = "Instance",
+    name = "WindowFocusReleased",
+    callback = {
+        get = function(self)
+            return WindowFocusReleased
+        end
+    }
+})
+
+Instance.declare({
+    class = "Instance",
+    name = "WindowFocused",
+    callback = {
+        get = function(self)
+            return WindowFocused
+        end
+    }
+})
+
+
+--!native
+--!optimize 2
+
 -- ═══════════════════════════════════════════════════════════
 -- ---- ENVIRONMENT ----
 -- ═══════════════════════════════════════════════════════════
@@ -2691,82 +3122,44 @@ local childTrackers = {}
 local propertyWatchers = {}
 
 -- ═══════════════════════════════════════════════════════════
--- ---- SIGNAL CLASS ----
+-- ---- ROBLOX-COMPATIBLE SIGNAL WRAPPER (SHARED WITH UIS/TWEEN)
 -- ═══════════════════════════════════════════════════════════
 
-local Signal = {}
-Signal.__index = Signal
+local RobloxSignal = {}
+RobloxSignal.__index = RobloxSignal
 
-local Connection = {}
-Connection.__index = Connection
-
-function Connection.new(signal, callback)
-    return setmetatable({
-        _signal = signal,
-        _callback = callback,
-        Connected = true
-    }, Connection)
+function RobloxSignal.new()
+    return setmetatable({_signal = Signal.new()}, RobloxSignal)
 end
 
-function Connection:Disconnect()
-    if not self.Connected then return end
-    self.Connected = false
-    
-    local connections = self._signal._connections
-    for i = #connections, 1, -1 do
-        if connections[i] == self then
-            tableremove(connections, i)
-            break
+function RobloxSignal:Connect(callback)
+    local conn = self._signal:connect(callback)
+    return {
+        Connected = true,
+        Disconnect = function(self)
+            if self.Connected then
+                conn:disconnect()
+                self.Connected = false
+            end
         end
-    end
+    }
 end
 
-Connection.disconnect = Connection.Disconnect
-
-function Signal.new()
-    return setmetatable({
-        _connections = {}
-    }, Signal)
+function RobloxSignal:Fire(...)
+    self._signal:fire(...)
 end
 
-function Signal:Connect(callback)
-    local conn = Connection.new(self, callback)
-    tableinsert(self._connections, conn)
-    return conn
+function RobloxSignal:Wait()
+    return self._signal:wait()
 end
 
-Signal.connect = Signal.Connect
-
-function Signal:Fire(...)
-    for _, conn in self._connections do
-        if conn.Connected then
-            taskspawn(conn._callback, ...)
-        end
-    end
-end
-
-function Signal:Wait()
-    local thread = coroutine.running()
-    local conn
-    conn = self:Connect(function(...)
-        conn:Disconnect()
-        taskspawn(thread, ...)
-    end)
-    return coroutine.yield()
-end
-
-Signal.wait = Signal.Wait
-
-function Signal:Once(callback)
-    local conn
-    conn = self:Connect(function(...)
+function RobloxSignal:Once(callback)
+    local conn = self:Connect(function(...)
         conn:Disconnect()
         callback(...)
     end)
     return conn
 end
-
-_G.Signal = Signal
 
 -- ═══════════════════════════════════════════════════════════
 -- ---- CHILD TRACKING ----
@@ -2778,8 +3171,8 @@ local function startChildTracker(instance)
     end
     
     local tracker = {
-        ChildAdded = Signal.new(),
-        ChildRemoved = Signal.new(),
+        ChildAdded = RobloxSignal.new(),
+        ChildRemoved = RobloxSignal.new(),
         lastChildren = {},
         active = true
     }
@@ -2862,7 +3255,7 @@ local function startPropertyWatcher(instance, propName)
         return propertyWatchers[instance][propName]
     end
     
-    local signal = Signal.new()
+    local signal = RobloxSignal.new()
     local lastValue = nil
     local active = true
     
@@ -2918,7 +3311,7 @@ local function registerEvents(classes)
                     return tracker.ChildAdded
                 end
                 
-                return Signal.new()
+                return RobloxSignal.new()
             end
         }
     })
@@ -2937,7 +3330,7 @@ local function registerEvents(classes)
                     return tracker.ChildRemoved
                 end
                 
-                return Signal.new()
+                return RobloxSignal.new()
             end
         }
     })
@@ -2956,7 +3349,7 @@ local function registerEvents(classes)
                     return signal
                 end
                 
-                return Signal.new()
+                return RobloxSignal.new()
             end
         }
     })
@@ -2987,7 +3380,7 @@ Instance.declare({
                 return tracker.ChildAdded
             end
             
-            return Signal.new()
+            return RobloxSignal.new()
         end
     }
 })
@@ -3005,11 +3398,10 @@ Instance.declare({
                 return tracker.ChildRemoved
             end
             
-            return Signal.new()
+            return RobloxSignal.new()
         end
     }
 })
-
 
 --!optimization 2
 
@@ -3031,7 +3423,7 @@ local _isProcessing = false
 local _updateThread = nil
 local _previousTickTime = 0
 
--- Validation tables
+-- Validation tables (for internal use)
 local VALID_EASING_STYLES = {
     Back = true, Bounce = true, Circ = true, Cubic = true,
     Elastic = true, Expo = true, Linear = true, Quad = true,
@@ -3043,7 +3435,39 @@ local VALID_EASING_DIRECTIONS = {
 }
 
 -- ═══════════════════════════════════════════════════════════
--- SECTION 2: UTILITY FUNCTIONS
+-- SECTION 2: ROBLOX-COMPATIBLE SIGNAL WRAPPER (SAME AS UIS)
+-- ═══════════════════════════════════════════════════════════
+
+local RobloxSignal = {}
+RobloxSignal.__index = RobloxSignal
+
+function RobloxSignal.new()
+    return setmetatable({_signal = Signal.new()}, RobloxSignal)
+end
+
+function RobloxSignal:Connect(callback)
+    local conn = self._signal:connect(callback)
+    return {
+        Connected = true,
+        Disconnect = function(self)
+            if self.Connected then
+                conn:disconnect()
+                self.Connected = false
+            end
+        end
+    }
+end
+
+function RobloxSignal:Fire(...)
+    self._signal:fire(...)
+end
+
+function RobloxSignal:Wait()
+    return self._signal:wait()
+end
+
+-- ═══════════════════════════════════════════════════════════
+-- SECTION 3: UTILITY FUNCTIONS
 -- ═══════════════════════════════════════════════════════════
 
 local function getCurrentTime()
@@ -3095,12 +3519,11 @@ local function isCFrameType(obj)
     if type(obj) ~= "table" then
         return false
     end
-        if obj.type == "Vector" then
+    if obj.type == "Vector" then
         return false
     end
-        return obj.Position ~= nil and (obj.RightVector ~= nil or obj.LookVector ~= nil or obj.UpVector ~= nil)
+    return obj.Position ~= nil and (obj.RightVector ~= nil or obj.LookVector ~= nil or obj.UpVector ~= nil)
 end
-
 
 local function validateInstanceProperty(instance, propName)
     if not instance then
@@ -3127,7 +3550,7 @@ local function validateInstanceProperty(instance, propName)
 end
 
 -- ═══════════════════════════════════════════════════════════
--- SECTION 3: INTERPOLATION SYSTEM
+-- SECTION 4: INTERPOLATION SYSTEM
 -- ═══════════════════════════════════════════════════════════
 
 local function interpolateNumber(start, finish, alpha)
@@ -3145,13 +3568,7 @@ local function interpolateVector(startVec, endVec, alpha)
     )
 end
 
---!optimization 2
-
--- ═══════════════════════════════════════════════════════════
--- FIXED CFRAME INTERPOLATION WITH QUATERNION SLERP
--- ═══════════════════════════════════════════════════════════
-
--- Add this to your utility functions section
+-- Quaternion helpers
 local function quaternionFromCFrame(cf)
     local trace = cf.RightVector.X + cf.UpVector.Y + cf.LookVector.Z
     
@@ -3193,7 +3610,6 @@ end
 local function quaternionToRotationMatrix(q)
     local qx, qy, qz, qw = q.x, q.y, q.z, q.w
     
-    -- Calculate rotation matrix components
     local x2 = qx + qx
     local y2 = qy + qy
     local z2 = qz + qz
@@ -3210,7 +3626,6 @@ local function quaternionToRotationMatrix(q)
     local wy2 = qw * y2
     local wz2 = qw * z2
     
-    -- Build rotation vectors
     local right = vector.create(
         1 - (yy2 + zz2),
         xy2 + wz2,
@@ -3233,20 +3648,16 @@ local function quaternionToRotationMatrix(q)
 end
 
 local function quaternionSlerp(q1, q2, alpha)
-    -- Compute dot product
     local dot = q1.x * q2.x + q1.y * q2.y + q1.z * q2.z + q1.w * q2.w
     
-    -- If dot is negative, negate one quaternion to take shorter path
     local q2_adjusted = q2
     if dot < 0 then
         q2_adjusted = {x = -q2.x, y = -q2.y, z = -q2.z, w = -q2.w}
         dot = -dot
     end
     
-    -- Clamp dot to avoid numerical errors
     dot = math.clamp(dot, -1, 1)
     
-    -- If quaternions are very close, use linear interpolation
     if dot > 0.9995 then
         local result = {
             x = q1.x + alpha * (q2_adjusted.x - q1.x),
@@ -3255,7 +3666,6 @@ local function quaternionSlerp(q1, q2, alpha)
             w = q1.w + alpha * (q2_adjusted.w - q1.w)
         }
         
-        -- Normalize
         local len = math.sqrt(result.x * result.x + result.y * result.y + 
                               result.z * result.z + result.w * result.w)
         if len > 0 then
@@ -3268,7 +3678,6 @@ local function quaternionSlerp(q1, q2, alpha)
         return result
     end
     
-    -- Calculate angle and perform slerp
     local theta = math.acos(dot)
     local sinTheta = math.sin(theta)
     
@@ -3284,7 +3693,6 @@ local function quaternionSlerp(q1, q2, alpha)
 end
 
 local function interpolateCFrame(cf1, cf2, alpha)
-    -- Validate inputs
     if not cf1 or not cf2 then
         warn("[TweenService] interpolateCFrame: nil CFrame detected")
         return cf1 or cf2
@@ -3295,7 +3703,6 @@ local function interpolateCFrame(cf1, cf2, alpha)
         return cf2
     end
     
-    -- Interpolate position (simple linear)
     local p1 = cf1.Position
     local p2 = cf2.Position
     local newPos = vector.create(
@@ -3304,28 +3711,19 @@ local function interpolateCFrame(cf1, cf2, alpha)
         p1.Z + (p2.Z - p1.Z) * alpha
     )
     
-    -- Convert CFrames to quaternions (keep this for smooth rotation)
     local q1 = quaternionFromCFrame(cf1)
     local q2 = quaternionFromCFrame(cf2)
-    
-    -- Slerp between quaternions
     local qResult = quaternionSlerp(q1, q2, alpha)
-    
-    -- Convert quaternion back to rotation matrix
     local right, up, look = quaternionToRotationMatrix(qResult)
     
-    -- ✅ FIX: Use CFrame.lookAt instead of CFrame.fromMatrix!
-    -- Calculate the forward direction point
-   local fixedLook = vector.create(-look.X, -look.Y, -look.Z)
-
--- Use the negated look to build the lookAt point
-local lookAtPoint = vector.create(
-    newPos.X + fixedLook.X,
-    newPos.Y + fixedLook.Y,
-    newPos.Z + fixedLook.Z
-)
-
-return CFrame.lookAt(newPos, lookAtPoint, up)
+    local fixedLook = vector.create(-look.X, -look.Y, -look.Z)
+    local lookAtPoint = vector.create(
+        newPos.X + fixedLook.X,
+        newPos.Y + fixedLook.Y,
+        newPos.Z + fixedLook.Z
+    )
+    
+    return CFrame.lookAt(newPos, lookAtPoint, up)
 end
 
 local function interpolateTable(startTable, endTable, alpha)
@@ -3367,9 +3765,8 @@ local function interpolateValue(startVal, endVal, alpha)
     end
 end
 
-
 -- ═══════════════════════════════════════════════════════════
--- SECTION 4: EASING FUNCTIONS
+-- SECTION 5: EASING FUNCTIONS
 -- ═══════════════════════════════════════════════════════════
 
 local EasingLibrary = {}
@@ -3633,31 +4030,27 @@ local function getEasingFunction(style, direction)
 end
 
 -- ═══════════════════════════════════════════════════════════
--- SECTION 5: TWEENINFO CLASS
+-- SECTION 6: TWEENINFO CLASS
 -- ═══════════════════════════════════════════════════════════
 
-local Enum = {
-    EasingStyle = {
-        Linear = "Linear",
-        Sine = "Sine",
-        Back = "Back",
-        Quad = "Quad",
-        Quart = "Quart",
-        Quint = "Quint",
-        Bounce = "Bounce",
-        Elastic = "Elastic",
-        Exponential = "Expo",
-        Expo = "Expo",
-        Cubic = "Cubic",
-        Circ = "Circ"
-    },
-    EasingDirection = {
-        In = "In",
-        Out = "Out",
-        InOut = "InOut"
-    }
-}
-
+local function getEnumName(enumValue)
+    if type(enumValue) == "string" then
+        return enumValue
+    end
+    
+    -- Convert enum to string and extract the name part
+    local enumString = tostring(enumValue)
+    
+    -- Extract just the last part after the final dot
+    -- "Enum.EasingStyle.Quad" -> "Quad"
+    local name = enumString:match("%.([^%.]+)$")
+    if name then
+        return name
+    end
+    
+    -- Fallback: return the whole string
+    return enumString
+end
 
 local TweenInfo = {}
 TweenInfo.__index = TweenInfo
@@ -3665,31 +4058,19 @@ TweenInfo.__index = TweenInfo
 function TweenInfo.new(time, easingStyle, easingDirection, repeatCount, reverses, delayTime)
     local self = setmetatable({}, TweenInfo)
     
-    -- Handle different input types for easingStyle and easingDirection
-    local style = easingStyle or "Quad"
-    local direction = easingDirection or "Out"
+    -- Handle Enum.EasingStyle values
+    local style = easingStyle or Enum.EasingStyle.Quad
+    local direction = easingDirection or Enum.EasingDirection.Out
     
-    -- If it's already a string, use it directly
-    if type(style) == "string" then
-        self.EasingStyle = style
-    else
-        -- It's an Enum value, convert to string
-        self.EasingStyle = tostring(style)
-    end
-    
-    if type(direction) == "string" then
-        self.EasingDirection = direction
-    else
-        -- It's an Enum value, convert to string
-        self.EasingDirection = tostring(direction)
-    end
+    -- Extract just the enum name (e.g., "Quad" from "Enum.EasingStyle.Quad")
+    self.EasingStyle = getEnumName(style)
+    self.EasingDirection = getEnumName(direction)
     
     self.Time = time or 1
     self.RepeatCount = repeatCount or 0
     self.Reverses = reverses or false
     self.DelayTime = delayTime or 0
     
-    -- Validate settings
     assert(type(self.Time) == "number" and self.Time >= 0, "[TweenService] TweenInfo.Time must be a positive number")
     assert(type(self.RepeatCount) == "number" and self.RepeatCount >= -1, "[TweenService] TweenInfo.RepeatCount must be >= -1")
     assert(type(self.DelayTime) == "number" and self.DelayTime >= 0, "[TweenService] TweenInfo.DelayTime must be >= 0")
@@ -3698,10 +4079,9 @@ function TweenInfo.new(time, easingStyle, easingDirection, repeatCount, reverses
 end
 
 _G.TweenInfo = TweenInfo
-_G.Enum = Enum
 
 -- ═══════════════════════════════════════════════════════════
--- SECTION 6: TWEEN CLASS
+-- SECTION 7: TWEEN CLASS
 -- ═══════════════════════════════════════════════════════════
 
 local Tween = {}
@@ -3717,12 +4097,11 @@ function Tween.new(instance, tweenInfo, properties)
     
     self.Instance = instance
     
-    -- Handle TweenInfo creation if table is passed
     if type(tweenInfo) == "table" and getmetatable(tweenInfo) ~= TweenInfo then
         self.TweenInfo = TweenInfo.new(
             tweenInfo.Time or 1,
-            tweenInfo.EasingStyle or "Quad",
-            tweenInfo.EasingDirection or "Out",
+            tweenInfo.EasingStyle or Enum.EasingStyle.Quad,
+            tweenInfo.EasingDirection or Enum.EasingDirection.Out,
             tweenInfo.RepeatCount or 0,
             tweenInfo.Reverses or false,
             tweenInfo.DelayTime or 0
@@ -3749,7 +4128,6 @@ function Tween.new(instance, tweenInfo, properties)
             end)
             
             if success then
-                -- Store original value based on type
                 if isVectorType(currentValue) then
                     local vec = toUnifiedVector(currentValue)
                     self._originalValues[propName] = {type = "Vector", X = vec.X, Y = vec.Y, Z = vec.Z}
@@ -3770,27 +4148,26 @@ function Tween.new(instance, tweenInfo, properties)
     end
     
     -- Normalize target values
-   for propName, targetValue in pairs(properties) do
-    if isCFrameType(targetValue) then
-        self.Properties[propName] = {
-            type = "CFrame",
-            Position = targetValue.Position,
-            RightVector = targetValue.RightVector,
-            UpVector = targetValue.UpVector,
-            LookVector = targetValue.LookVector
-        }
-    elseif isVectorType(targetValue) then
-        local vec = toUnifiedVector(targetValue)
-        self.Properties[propName] = {type = "Vector", X = vec.X, Y = vec.Y, Z = vec.Z}
+    for propName, targetValue in pairs(properties) do
+        if isCFrameType(targetValue) then
+            self.Properties[propName] = {
+                type = "CFrame",
+                Position = targetValue.Position,
+                RightVector = targetValue.RightVector,
+                UpVector = targetValue.UpVector,
+                LookVector = targetValue.LookVector
+            }
+        elseif isVectorType(targetValue) then
+            local vec = toUnifiedVector(targetValue)
+            self.Properties[propName] = {type = "Vector", X = vec.X, Y = vec.Y, Z = vec.Z}
+        end
     end
-end
     
-    -- Event system
-    self.Completed = Signal.new()
+    -- Event system (using RobloxSignal wrapper)
+    self.Completed = RobloxSignal.new()
     
     return self
 end
-
 
 function Tween:Play()
     if self._isActive then
@@ -3821,7 +4198,7 @@ function Tween:Play()
                 end
             end
         end
-        self._valuesStored = true  -- Mark as stored
+        self._valuesStored = true
     end
     
     self._isActive = true
@@ -3836,7 +4213,6 @@ function Tween:Play()
         self:_step(0.001)
     end)
 end
-
 
 function Tween:Pause()
     if not self._isActive then
@@ -3875,7 +4251,6 @@ function Tween:Cancel()
     
     self:Stop()
     
-    -- Restore original values
     for propName, originalValue in pairs(self._originalValues) do
         local success = pcall(function()
             if type(originalValue) == "table" and originalValue.type == "Vector" then
@@ -3891,8 +4266,6 @@ function Tween:Cancel()
     end
 end
 
---!optimization 2
-
 function Tween:_step(deltaTime)
     if not self._isActive then
         return false
@@ -3906,7 +4279,6 @@ function Tween:_step(deltaTime)
         return false
     end
     
-    -- Handle delay
     if self._elapsedTime < tweenInfo.DelayTime then
         return true
     end
@@ -3916,32 +4288,25 @@ function Tween:_step(deltaTime)
     local totalIterations = tweenInfo.RepeatCount == 0 and 1 or tweenInfo.RepeatCount
     local totalDuration = duration * totalIterations
     
-    -- ✅ Check if animation is complete FIRST
     if adjustedTime >= totalDuration then
-        -- Set final values with exact target (alpha = 1.0)
         local success = pcall(function()
             for propName, targetValue in pairs(self.Properties) do
                 if type(targetValue) == "table" and targetValue.type == "Vector" then
-                    -- Vector: final value
                     self.Instance[propName] = vector.create(targetValue.X, targetValue.Y, targetValue.Z)
-                    
                 elseif type(targetValue) == "table" and targetValue.Position and targetValue.LookVector then
-                    -- CFrame: Use CFrame.lookAt for final value
                     local pos = targetValue.Position
                     local look = targetValue.LookVector
                     local up = targetValue.UpVector
                     
                     local fixedLook = vector.create(-look.X, -look.Y, -look.Z)
-
-    local lookAtPoint = vector.create(
-        pos.X + fixedLook.X,
-        pos.Y + fixedLook.Y,
-        pos.Z + fixedLook.Z
-    )
-
-    self.Instance[propName] = CFrame.lookAt(pos, lookAtPoint, up)
-                     else
-                    -- Other types: direct assignment
+                    local lookAtPoint = vector.create(
+                        pos.X + fixedLook.X,
+                        pos.Y + fixedLook.Y,
+                        pos.Z + fixedLook.Z
+                    )
+                    
+                    self.Instance[propName] = CFrame.lookAt(pos, lookAtPoint, up)
+                else
                     self.Instance[propName] = targetValue
                 end
             end
@@ -3960,23 +4325,19 @@ function Tween:_step(deltaTime)
         return false
     end
     
-    -- Calculate progress within current iteration
     local iterationProgress = (adjustedTime % duration) / duration
     if self._playbackDirection == -1 then
         iterationProgress = 1 - iterationProgress
     end
     
-    -- Apply easing
     local easingFunc = getEasingFunction(tweenInfo.EasingStyle, tweenInfo.EasingDirection)
     local alpha = easingFunc(iterationProgress)
     
-    -- Update properties during animation
     for propName, targetValue in pairs(self.Properties) do
         if self._originalValues[propName] ~= nil then
             local originalValue = self._originalValues[propName]
             local success = pcall(function()
                 if type(originalValue) == "table" and originalValue.type == "Vector" then
-                    -- Vector interpolation
                     local startVec = vector.create(originalValue.X, originalValue.Y, originalValue.Z)
                     local endVec
                     if type(targetValue) == "table" and targetValue.type == "Vector" then
@@ -3988,7 +4349,6 @@ function Tween:_step(deltaTime)
                     self.Instance[propName] = resultVec
                     
                 elseif isCFrameType(originalValue) then
-                    -- CFrame interpolation
                     local success2, resultCF = pcall(function()
                         return interpolateCFrame(originalValue, targetValue, alpha)
                     end)
@@ -4008,16 +4368,13 @@ function Tween:_step(deltaTime)
                     end
                     
                 elseif type(originalValue) == "table" and type(targetValue) == "table" then
-                    -- Table interpolation
                     local result = interpolateTable(originalValue, targetValue, alpha)
                     self.Instance[propName] = result
                     
                 elseif type(originalValue) == "number" and type(targetValue) == "number" then
-                    -- Number interpolation
                     self.Instance[propName] = interpolateNumber(originalValue, targetValue, alpha)
                     
                 else
-                    -- Direct assignment
                     self.Instance[propName] = targetValue
                 end
             end)
@@ -4028,7 +4385,6 @@ function Tween:_step(deltaTime)
         end
     end
     
-    -- Check for iteration completion
     if adjustedTime >= (self._iterationCount + 1) * duration then
         self._iterationCount = self._iterationCount + 1
         
@@ -4057,15 +4413,12 @@ function Tween:_step(deltaTime)
     return true
 end
 
-
 -- ═══════════════════════════════════════════════════════════
--- SECTION 7: ANIMATION REGISTRY & UPDATE LOOP
+-- SECTION 8: ANIMATION REGISTRY & UPDATE LOOP
 -- ═══════════════════════════════════════════════════════════
 
 function TweenService._registerAnimation(tween)
     table.insert(_activeAnimations, tween)
-    
-    -- Always try to start the loop (fix will handle if already running)
     TweenService._startUpdateLoop()
 end
 
@@ -4076,15 +4429,11 @@ function TweenService._unregisterAnimation(tween)
             break
         end
     end
-    
-    -- Don't stop loop here, let it exit naturally
 end
 
 function TweenService._processAllAnimations(deltaTime)
-    -- Clamp delta time to prevent spikes
     deltaTime = math.clamp(deltaTime, MIN_FRAME_TIME, MAX_FRAME_TIME)
     
-    -- Process all animations
     local i = 1
     while i <= #_activeAnimations do
         local tween = _activeAnimations[i]
@@ -4105,7 +4454,6 @@ function TweenService._processAllAnimations(deltaTime)
 end
 
 function TweenService._startUpdateLoop()
-    -- FIX: Check if loop is actually running, not just the flag
     if _isProcessing and _updateThread then
         return
     end
@@ -4115,12 +4463,9 @@ function TweenService._startUpdateLoop()
     
     _updateThread = task.spawn(function()
         while true do
-            -- Check if we have animations to process
             if #_activeAnimations == 0 then
-                -- Wait a bit before exiting in case new tweens are added
                 task.wait(0.1)
                 if #_activeAnimations == 0 then
-                    -- Still empty, exit
                     _isProcessing = false
                     _updateThread = nil
                     break
@@ -4148,7 +4493,7 @@ function TweenService._stopUpdateLoop()
 end
 
 -- ═══════════════════════════════════════════════════════════
--- SECTION 8: TWEENSERVICE API
+-- SECTION 9: TWEENSERVICE API
 -- ═══════════════════════════════════════════════════════════
 
 function TweenService:Create(instance, tweenInfo, properties)
@@ -4197,15 +4542,4 @@ Instance.declare({
     }
 })
 
---Instance.declare({
-  --  class = "TweenService",
-  --  name = "TweenInfo",
-   -- callback = {
-   --     get = function(self)
-       --     return TweenInfo
-      --  end
-  --  }
---})
-
 return TweenService
-
