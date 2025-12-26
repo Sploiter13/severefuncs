@@ -671,4 +671,56 @@ registerIsA({"DialogChoice", "NoCollisionConstraint", "Path", "PathfindingLink",
 registerIsA({"UIGradient", "UIGridLayout", "UIListLayout", "UIPageLayout", "UIScale", "UISizeConstraint", "UIStroke", "UIPadding"})
 
 
+Instance.declare({
+    class = "Instance",
+    name = "GetFullName",
+    callback = {
+        method = function(self)
+            if not self then
+                return "nil"
+            end
+            
+            local path = {}
+            local current = self
+            
+            -- Build path from current instance up to game
+            while current do
+                local success, name = pcall(function()
+                    return current.Name
+                end)
+                
+                if success and name then
+                    table.insert(path, 1, name)
+                else
+                    break
+                end
+                
+                -- Get parent
+                local parentSuccess, parent = pcall(function()
+                    return current.Parent
+                end)
+                
+                if not parentSuccess or not parent then
+                    break
+                end
+                
+                current = parent
+                
+                -- Stop at DataModel (game)
+                if current.ClassName == "DataModel" then
+                    table.insert(path, 1, "game")
+                    break
+                end
+            end
+            
+            if #path == 0 then
+                return "game"
+            end
+            
+            return table.concat(path, ".")
+        end
+    }
+})
+
+
 print("loaded")
