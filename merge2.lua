@@ -22,6 +22,9 @@ local memory_writevector = memory.writevector
 local memory_writestring = memory.writestring
 local memory_writebool = memory.writebool
 
+local vector_create = vector.create  
+local string_format = string.format  
+
 local bit32_band = bit32.band
 local bit32_bor = bit32.bor
 local bit32_bnot = bit32.bnot
@@ -217,6 +220,40 @@ local Offsets = {
         AnimationId = 0xD0
     },
 
+    Terrain = {
+        GrassLength = 0x1F0,
+        MaterialColors = 0x278,
+        WaterColor = 0x1E0,
+        WaterReflectance = 0x1F8,
+        WaterTransparency = 0x1FC,
+        WaterWaveSize = 0x200,
+        WaterWaveSpeed = 0x204
+    },
+
+    MaterialColors = {
+        Asphalt = 0x10,
+        Basalt = 0xD,
+        Brick = 0x5,
+        Cobblestone = 0x11,
+        Concrete = 0x4,
+        CrackedLava = 0xF,
+        Glacier = 0x9,
+        Grass = 0x2,
+        Ground = 0xE,
+        Ice = 0x12,
+        LeafyGrass = 0x13,
+        Limestone = 0x15,
+        Mud = 0xC,
+        Pavement = 0x16,
+        Rock = 0x8,
+        Salt = 0x14,
+        Sand = 0x6,
+        Sandstone = 0xB,
+        Slate = 0x3,
+        Snow = 0xA,
+        WoodPlanks = 0x7
+    },
+
 }
 
 
@@ -239,14 +276,35 @@ local function toVector(value)
 end
 
 local function toColorVector(value)
-    if typeof(value) == "Color3" then
-        return vector.create(value.R, value.G, value.B)
-    elseif typeof(value) == "Vector3" then
-        return vector.create(value.X, value.Y, value.Z)
-    elseif type(value) == "vector" then
+    local t = typeof(value)
+    
+    if t == "Color3" then
+        return vector_create(value.R, value.G, value.B)
+    end
+    
+    if t == "Vector3" then
+        return vector_create(value.X, value.Y, value.Z)
+    end
+    
+    if type(value) == "vector" then
         return value
     end
-    error("Value must be Color3, Vector3, or vector")
+    
+    if type(value) == "table" then
+        if value.R and value.G and value.B then
+            return vector_create(value.R, value.G, value.B)
+        elseif value.X and value.Y and value.Z then
+            return vector_create(value.X, value.Y, value.Z)
+        elseif value[1] and value[2] and value[3] then
+            return vector_create(value[1], value[2], value[3])
+        end
+    end
+    
+    error(string_format(
+        "toColorVector: Cannot convert %s to vector. Value: %s",
+        t,
+        tostring(value)
+    ))
 end
 
 local function round(num, decimals)
@@ -323,6 +381,33 @@ GetCalculatedAbsolutePosition = function(instance)
     local finalY = anchorPosY - (myH * anchorY)
     
     return finalX, finalY
+end
+
+local function readMaterialColor(terrain, materialIndex)
+    local vectorPtr = memory_readu64(terrain, Offsets.Terrain.MaterialColors)
+    
+    local colorOffset = materialIndex * 3
+    
+    local r = memory_readu8(vectorPtr, colorOffset)
+    local g = memory_readu8(vectorPtr, colorOffset + 1)
+    local b = memory_readu8(vectorPtr, colorOffset + 2)
+    
+    return Color3.new(r / 255, g / 255, b / 255)
+end
+
+local function writeMaterialColor(terrain, materialIndex, color)
+    local vectorPtr = memory_readu64(terrain, Offsets.Terrain.MaterialColors)
+    
+    local colorOffset = materialIndex * 3
+    
+    local colorVec = toColorVector(color)
+    local r = math_floor(colorVec.X * 255 + 0.5)
+    local g = math_floor(colorVec.Y * 255 + 0.5)
+    local b = math_floor(colorVec.Z * 255 + 0.5)
+    
+    memory_writeu8(vectorPtr, colorOffset, r)
+    memory_writeu8(vectorPtr, colorOffset + 1, g)
+    memory_writeu8(vectorPtr, colorOffset + 2, b)
 end
 
 
@@ -1932,6 +2017,156 @@ Instance.declare({
     }
 })
 
+-- ═══════════════════════════════════════════════════════════
+-- TERRAIN PROPERTIES
+-- ═══════════════════════════════════════════════════════════
+
+Instance.declare({
+    class = "Terrain",
+    name = "GrassLength",
+    callback = {
+        get = function(self)
+            return memory_readf32(self, Offsets.Terrain.GrassLength)
+        end,
+        set = function(self, value)
+            memory_writef32(self, Offsets.Terrain.GrassLength, value)
+        end
+    }
+})
+
+Instance.declare({
+    class = "Terrain",
+    name = "WaterColor",
+    callback = {
+        get = function(self)
+            local success, result = pcall(function()
+                local raw = memory_readvector(self, Offsets.Terrain.WaterColor)
+                return Color3.new(raw.X, raw.Y, raw.Z)
+            end)
+            
+            if success then
+                return result
+            else
+                warn("[Terrain.WaterColor] Read failed:", result)
+                return Color3.new(0, 0, 0)
+            end
+        end,
+        set = function(self, value)
+            local success, err = pcall(function()
+                local vec = toColorVector(value)
+                memory_writevector(self, Offsets.Terrain.WaterColor, vec)
+            end)
+            
+            if not success then
+                warn("[Terrain.WaterColor] Write failed:", err)
+                warn("Value type:", typeof(value), "Value:", value)
+            end
+        end
+    }
+})
+
+Instance.declare({
+    class = "Terrain",
+    name = "WaterReflectance",
+    callback = {
+        get = function(self)
+            return memory_readf32(self, Offsets.Terrain.WaterReflectance)
+        end,
+        set = function(self, value)
+            memory_writef32(self, Offsets.Terrain.WaterReflectance, value)
+        end
+    }
+})
+
+Instance.declare({
+    class = "Terrain",
+    name = "WaterTransparency",
+    callback = {
+        get = function(self)
+            return memory_readf32(self, Offsets.Terrain.WaterTransparency)
+        end,
+        set = function(self, value)
+            memory_writef32(self, Offsets.Terrain.WaterTransparency, value)
+        end
+    }
+})
+
+Instance.declare({
+    class = "Terrain",
+    name = "WaterWaveSize",
+    callback = {
+        get = function(self)
+            return memory_readf32(self, Offsets.Terrain.WaterWaveSize)
+        end,
+        set = function(self, value)
+            memory_writef32(self, Offsets.Terrain.WaterWaveSize, value)
+        end
+    }
+})
+
+Instance.declare({
+    class = "Terrain",
+    name = "WaterWaveSpeed",
+    callback = {
+        get = function(self)
+            return memory_readf32(self, Offsets.Terrain.WaterWaveSpeed)
+        end,
+        set = function(self, value)
+            memory_writef32(self, Offsets.Terrain.WaterWaveSpeed, value)
+        end
+    }
+})
+
+-- ═══════════════════════════════════════════════════════════
+-- TERRAIN MATERIAL COLORS
+-- ═══════════════════════════════════════════════════════════
+
+local materialNames = {
+    "Asphalt", "Basalt", "Brick", "Cobblestone", "Concrete", 
+    "CrackedLava", "Glacier", "Grass", "Ground", "Ice", 
+    "LeafyGrass", "Limestone", "Mud", "Pavement", "Rock", 
+    "Salt", "Sand", "Sandstone", "Slate", "Snow", "WoodPlanks"
+}
+
+for _, materialName in ipairs(materialNames) do
+    Instance.declare({
+        class = "Terrain",
+        name = materialName .. "Color",
+        callback = {
+            get = function(self)
+                return readMaterialColor(self, Offsets.MaterialColors[materialName])
+            end,
+            set = function(self, value)
+                writeMaterialColor(self, Offsets.MaterialColors[materialName], value)
+            end
+        }
+    })
+end
+
+Instance.declare({
+    class = "Terrain",
+    name = "GetMaterialColor",
+    callback = {
+        method = function(self, materialName)
+            local materialIndex = Offsets.MaterialColors[materialName]
+            assert(materialIndex, "Invalid material name: " .. tostring(materialName))
+            return readMaterialColor(self, materialIndex)
+        end
+    }
+})
+
+Instance.declare({
+    class = "Terrain",
+    name = "SetMaterialColor",
+    callback = {
+        method = function(self, materialName, color)
+            local materialIndex = Offsets.MaterialColors[materialName]
+            assert(materialIndex, "Invalid material name: " .. tostring(materialName))
+            writeMaterialColor(self, materialIndex, color)
+        end
+    }
+})
+
 
 local function createCFrameTable(pos, right, up, look)
     return {
@@ -2658,7 +2893,6 @@ Instance.declare({
 
 
 print("loaded")
-
 
 --!native
 --!optimize 2
@@ -3403,6 +3637,7 @@ Instance.declare({
     }
 })
 
+
 --!optimization 2
 
 -- ═══════════════════════════════════════════════════════════
@@ -4030,7 +4265,7 @@ local function getEasingFunction(style, direction)
 end
 
 -- ═══════════════════════════════════════════════════════════
--- SECTION 6: TWEENINFO CLASS
+-- SECTION 6: TWEENINFO CLASS (USES SEVERE'S ENUM)
 -- ═══════════════════════════════════════════════════════════
 
 local function getEnumName(enumValue)
@@ -4058,7 +4293,7 @@ TweenInfo.__index = TweenInfo
 function TweenInfo.new(time, easingStyle, easingDirection, repeatCount, reverses, delayTime)
     local self = setmetatable({}, TweenInfo)
     
-    -- Handle Enum.EasingStyle values
+    -- Handle Enum.EasingStyle values (from Severe's Enum table)
     local style = easingStyle or Enum.EasingStyle.Quad
     local direction = easingDirection or Enum.EasingDirection.Out
     
