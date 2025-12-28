@@ -1,6 +1,10 @@
 --!native
 --!optimize 2
 
+local source = [[
+--!native
+--!optimize 2
+
 ---- environment ----
 local memory_readu8 = memory.readu8
 local memory_readu16 = memory.readu16
@@ -2168,6 +2172,7 @@ Instance.declare({
 })
 
 
+
 local function createCFrameTable(pos, right, up, look)
     return {
         Position = pos,
@@ -2894,6 +2899,7 @@ Instance.declare({
 
 print("loaded")
 
+
 --!native
 --!optimize 2
 
@@ -2979,7 +2985,7 @@ local function convertKeyNameToKeyCode(keyName)
     return KeyNameToKeyCode[keyName] or 0
 end
 
-local RobloxSignal = {}
+RobloxSignal = {}
 RobloxSignal.__index = RobloxSignal
 
 function RobloxSignal.new()
@@ -3005,6 +3011,17 @@ end
 
 function RobloxSignal:Wait()
     return self._signal:wait()
+end
+
+function RobloxSignal:Once(callback)
+	local conn
+	conn = self:Connect(function(...)
+		if conn and conn.Connected then
+			conn:Disconnect()
+		end
+		callback(...)
+	end)
+	return conn
 end
 
 ---- InputObject Class ----
@@ -3179,7 +3196,7 @@ end)
 
 ---- Declare Methods ----
 Instance.declare({
-    class = "Instance",
+    class = "UserInputService",
     name = "IsKeyDown",
     callback = {
         method = function(self, keyCode)
@@ -3195,7 +3212,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "Instance",
+    class = "UserInputService",
     name = "IsMouseButtonPressed",
     callback = {
         method = function(self, mouseButton)
@@ -3210,7 +3227,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "Instance",
+    class = "UserInputService",
     name = "GetKeysPressed",
     callback = {
         method = function(self)
@@ -3236,7 +3253,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "Instance",
+    class = "UserInputService",
     name = "GetMouseButtonsPressed",
     callback = {
         method = function(self)
@@ -3265,7 +3282,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "Instance",
+    class = "UserInputService",
     name = "GetMouseLocation",
     callback = {
         method = function(self)
@@ -3275,7 +3292,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "Instance",
+    class = "UserInputService",
     name = "InputBegan",
     callback = {
         get = function(self)
@@ -3285,7 +3302,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "Instance",
+    class = "UserInputService",
     name = "InputEnded",
     callback = {
         get = function(self)
@@ -3295,7 +3312,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "Instance",
+    class = "UserInputService",
     name = "InputChanged",
     callback = {
         get = function(self)
@@ -3305,7 +3322,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "Instance",
+    class = "UserInputService",
     name = "WindowFocusReleased",
     callback = {
         get = function(self)
@@ -3315,7 +3332,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "Instance",
+    class = "UserInputService",
     name = "WindowFocused",
     callback = {
         get = function(self)
@@ -3354,46 +3371,6 @@ local POLL_INTERVAL = 0.1
 
 local childTrackers = {}
 local propertyWatchers = {}
-
--- ═══════════════════════════════════════════════════════════
--- ---- ROBLOX-COMPATIBLE SIGNAL WRAPPER (SHARED WITH UIS/TWEEN)
--- ═══════════════════════════════════════════════════════════
-
-local RobloxSignal = {}
-RobloxSignal.__index = RobloxSignal
-
-function RobloxSignal.new()
-    return setmetatable({_signal = Signal.new()}, RobloxSignal)
-end
-
-function RobloxSignal:Connect(callback)
-    local conn = self._signal:connect(callback)
-    return {
-        Connected = true,
-        Disconnect = function(self)
-            if self.Connected then
-                conn:disconnect()
-                self.Connected = false
-            end
-        end
-    }
-end
-
-function RobloxSignal:Fire(...)
-    self._signal:fire(...)
-end
-
-function RobloxSignal:Wait()
-    return self._signal:wait()
-end
-
-function RobloxSignal:Once(callback)
-    local conn = self:Connect(function(...)
-        conn:Disconnect()
-        callback(...)
-    end)
-    return conn
-end
 
 -- ═══════════════════════════════════════════════════════════
 -- ---- CHILD TRACKING ----
@@ -3638,7 +3615,7 @@ Instance.declare({
 })
 
 
---!optimization 2
+--!optimize 2
 
 -- ═══════════════════════════════════════════════════════════
 -- SECTION 1: CONFIGURATION & CONSTANTS
@@ -3669,37 +3646,6 @@ local VALID_EASING_DIRECTIONS = {
     In = true, Out = true, InOut = true
 }
 
--- ═══════════════════════════════════════════════════════════
--- SECTION 2: ROBLOX-COMPATIBLE SIGNAL WRAPPER (SAME AS UIS)
--- ═══════════════════════════════════════════════════════════
-
-local RobloxSignal = {}
-RobloxSignal.__index = RobloxSignal
-
-function RobloxSignal.new()
-    return setmetatable({_signal = Signal.new()}, RobloxSignal)
-end
-
-function RobloxSignal:Connect(callback)
-    local conn = self._signal:connect(callback)
-    return {
-        Connected = true,
-        Disconnect = function(self)
-            if self.Connected then
-                conn:disconnect()
-                self.Connected = false
-            end
-        end
-    }
-end
-
-function RobloxSignal:Fire(...)
-    self._signal:fire(...)
-end
-
-function RobloxSignal:Wait()
-    return self._signal:wait()
-end
 
 -- ═══════════════════════════════════════════════════════════
 -- SECTION 3: UTILITY FUNCTIONS
@@ -4778,3 +4724,15 @@ Instance.declare({
 })
 
 return TweenService
+
+]]
+
+local bytecode = luau.compile(source, {
+	optimizationLevel = 2,
+	coverageLevel = 2,
+	debugLevel = 2,
+})
+
+local func = luau.load(bytecode) 
+
+func()
