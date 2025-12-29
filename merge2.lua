@@ -1951,29 +1951,30 @@ Instance.declare({
 -- ═══════════════════════════════════════════════════════════
 -- ANIMATIONTRACK PROPERTIES
 -- ═══════════════════════════════════════════════════════════
-
 Instance.declare({
-    class = "StringValue",
+    class = "AnimationTrack",
     name = "Animation",
     callback = {
         get = function(self)
-            return memory_readu64(self, Offsets.AnimationTrack.Animation)
+            local ptr = memory_readu64(self, Offsets.AnimationTrack.Animation)
+            return ptr ~= 0 and ptr or nil
         end
     }
 })
 
 Instance.declare({
-    class = "Instance",
+    class = "AnimationTrack",
     name = "Animator",
     callback = {
         get = function(self)
-            return memory_readu64(self, Offsets.AnimationTrack.Animator)
+            local ptr = memory_readu64(self, Offsets.AnimationTrack.Animator)
+            return ptr ~= 0 and ptr or nil
         end
     }
 })
 
 Instance.declare({
-    class = "Instance",
+    class = "AnimationTrack",
     name = "IsPlaying",
     callback = {
         get = function(self)
@@ -1983,7 +1984,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "Instance",
+    class = "AnimationTrack",
     name = "Looped",
     callback = {
         get = function(self)
@@ -1996,7 +1997,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "Instance",
+    class = "AnimationTrack",
     name = "Speed",
     callback = {
         get = function(self)
@@ -2009,17 +2010,26 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "Instance",
+    class = "Animation",
     name = "AnimationId",
     callback = {
         get = function(self)
-            return memory_readstring(self, Offsets.AnimationTrack.AnimationId)
+            local strPtr = memory_readu64(self, Offsets.Misc.AnimationId)
+            if strPtr == 0 then return "" end
+            return memory_readstring(strPtr)
         end,
         set = function(self, value)
-            memory_writestring(self, Offsets.AnimationTrack.AnimationId, value)
+            local strPtr = memory_readu64(self, Offsets.Misc.AnimationId)
+            if strPtr ~= 0 then
+                for i = 1, #value do
+                    memory_writeu8(strPtr + i - 1, string.byte(value, i))
+                end
+                memory_writeu8(strPtr + #value, 0)
+            end
         end
     }
 })
+
 
 -- ═══════════════════════════════════════════════════════════
 -- TERRAIN PROPERTIES
