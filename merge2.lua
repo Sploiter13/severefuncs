@@ -2014,12 +2014,12 @@ Instance.declare({
     name = "AnimationId",
     callback = {
         get = function(self)
-            local strPtr = memory.readu64(self, Offsets.AnimationTrack.AnimationId)
+            local strPtr = memory.readu64(self, Offsets.AnimationTrack.Animation)
             if strPtr == 0 then return "" end
-            return memory.readstring(strPtr)
+            return memory.readstring(strPtr + Offsets.AnimationTrack.AnimationId)
         end,
         set = function(self, value)
-            local strPtr = memory.readu64(self, Offsets.AnimationTrack.AnimationId)
+            local strPtr = memory.readu64(self, Offsets.AnimationTrack.Animation)
             if strPtr ~= 0 then
                 for i = 1, #value do
                     memory.writeu8(strPtr, i - 1, string.byte(value, i))
