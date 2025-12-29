@@ -1953,7 +1953,7 @@ Instance.declare({
 -- ═══════════════════════════════════════════════════════════
 
 Instance.declare({
-    class = "AnimationTrack",
+    class = "Instance",
     name = "Animation",
     callback = {
         get = function(self)
@@ -1963,7 +1963,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "AnimationTrack",
+    class = "Instance",
     name = "Animator",
     callback = {
         get = function(self)
@@ -1973,7 +1973,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "AnimationTrack",
+    class = "Instance",
     name = "IsPlaying",
     callback = {
         get = function(self)
@@ -1983,7 +1983,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "AnimationTrack",
+    class = "Instance",
     name = "Looped",
     callback = {
         get = function(self)
@@ -1996,7 +1996,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "AnimationTrack",
+    class = "Instance",
     name = "Speed",
     callback = {
         get = function(self)
@@ -2009,7 +2009,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "AnimationTrack",
+    class = "Instance",
     name = "AnimationId",
     callback = {
         get = function(self)
