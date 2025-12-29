@@ -2010,7 +2010,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = {"Animation","Animation1"},
+    class = "Animation",
     name = "AnimationId",
     callback = {
         get = function(self)
