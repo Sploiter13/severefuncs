@@ -2010,25 +2010,26 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "Animation1",
+    class = "Animation",
     name = "AnimationId",
     callback = {
         get = function(self)
-            local strPtr = memory_readu64(self, Offsets.AnimationTrack.AnimationId)
+            local strPtr = memory.readu64(self, Offsets.AnimationTrack.AnimationId)
             if strPtr == 0 then return "" end
-            return memory_readstring(strPtr)
+            return memory.readstring(strPtr, 0)
         end,
         set = function(self, value)
-            local strPtr = memory_readu64(self, Offsets.AnimationTrack.AnimationId)
+            local strPtr = memory.readu64(self, Offsets.AnimationTrack.AnimationId)
             if strPtr ~= 0 then
                 for i = 1, #value do
-                    memory_writeu8(strPtr + i - 1, string.byte(value, i))
+                    memory.writeu8(strPtr, i - 1, string.byte(value, i))
                 end
-                memory_writeu8(strPtr + #value, 0)
+                memory.writeu8(strPtr, #value, 0)
             end
         end
     }
 })
+
 
 
 -- ═══════════════════════════════════════════════════════════
