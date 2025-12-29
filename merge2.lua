@@ -2016,7 +2016,7 @@ Instance.declare({
         get = function(self)
             local strPtr = memory.readu64(self, Offsets.AnimationTrack.AnimationId)
             if strPtr == 0 then return "" end
-            return memory.readstring(strPtr, 0)
+            return memory.readstring(strPtr)
         end,
         set = function(self, value)
             local strPtr = memory.readu64(self, Offsets.AnimationTrack.AnimationId)
