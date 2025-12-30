@@ -666,14 +666,20 @@ Instance.declare({
             local primitive = pointer_to_userdata(primitive_ptr)
             
             if value then
+                if not original_owners[self] then
+                    original_owners[self] = memory_readi32(primitive, Offsets.Primitive.NetworkOwner)
+                end
                 memory_writei32(primitive, Offsets.Primitive.NetworkOwner, 2)
             else
-                memory_writei32(primitive, Offsets.Primitive.NetworkOwner, 1)
+                local original = original_owners[self]
+                if original then
+                    memory_writei32(primitive, Offsets.Primitive.NetworkOwner, original)
+                    original_owners[self] = nil            
+                end
             end
         end
     }
 })
-
 
 Instance.declare({
     class = BASEPART_CLASSES,
