@@ -68,6 +68,7 @@ local Offsets = {
         AssemblyAngularVelocity = 0xFC,
         Material = 0x226,
         Anchored = 0xD20,
+        NetworkOwner = 0x228,
         CanQuery = 0xD75,
         CanTouch = 0xD74,
         EnableFluidForces = 0x126E,
@@ -651,15 +652,28 @@ Instance.declare({
     name = "Anchored",
     callback = {
         get = function(self)
-            local primitive = getPrimitive(self)
-            return memory_readbool(primitive, Offsets.Primitive.Anchored)
+            local primitive_ptr = getPrimitive(self)
+            if primitive_ptr == 0 then return false end
+            
+            local primitive = pointer_to_userdata(primitive_ptr)
+            local owner = memory_readi32(primitive, Offsets.Primitive.NetworkOwner)
+            return owner == 2
         end,
-        set = function(self, value)
-            local primitive = getPrimitive(self)
-            memory_writebool(primitive, Offsets.Primitive.Anchored, value)
+        set = function(self, value: boolean)
+            local primitive_ptr = getPrimitive(self)
+            if primitive_ptr == 0 then return end
+            
+            local primitive = pointer_to_userdata(primitive_ptr)
+            
+            if value then
+                memory_writei32(primitive, Offsets.Primitive.NetworkOwner, 2)
+            else
+                memory_writei32(primitive, Offsets.Primitive.NetworkOwner, 1)
+            end
         end
     }
 })
+
 
 Instance.declare({
     class = BASEPART_CLASSES,
