@@ -647,7 +647,6 @@ Instance.declare({
     }
 })
 
-local original_owners = setmetatable({}, {__mode = "k"})
 Instance.declare({
     class = BASEPART_CLASSES,
     name = "Anchored",
@@ -665,22 +664,11 @@ Instance.declare({
             if primitive_ptr == 0 then return end
             
             local primitive = pointer_to_userdata(primitive_ptr)
-        
+            
             if value then
-                if not original_owners[self] then
-                    local current = memory_readi32(primitive, Offsets.Primitive.NetworkOwner)
-                    original_owners[self] = current
-                end  
                 memory_writei32(primitive, Offsets.Primitive.NetworkOwner, 2)
             else
-                local original = original_owners[self]
-                if original then
-                    memory_writei32(primitive, Offsets.Primitive.NetworkOwner, original)
-                    original_owners[self] = nil  
-                else
-                    warn("No original network owner found for " .. self.Name)
-                    memory_writei32(primitive, Offsets.Primitive.NetworkOwner, 4)
-                end
+                memory_writei32(primitive, Offsets.Primitive.NetworkOwner, 4)
             end
         end
     }
