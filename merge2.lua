@@ -4746,8 +4746,8 @@ Instance.declare({
         end
     }
 })
-print"done"
-
+print("done")
+print"1"
 return TweenService
 
 ]]
