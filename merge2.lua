@@ -2923,10 +2923,6 @@ Instance.declare({
 
 print("loaded")
 
-
---!native
---!optimize 2
-
 ---- Environment ----
 local getpressedkeys = getpressedkeys
 local isleftpressed = isleftpressed
@@ -3635,9 +3631,6 @@ Instance.declare({
         end
     }
 })
-
-
---!optimize 2
 
 -- ═══════════════════════════════════════════════════════════
 -- SECTION 1: CONFIGURATION & CONSTANTS
