@@ -3365,9 +3365,7 @@ Instance.declare({
     }
 })
 
-
---!native
---!optimize 2
+print("fon")
 
 -- ═══════════════════════════════════════════════════════════
 -- ---- ENVIRONMENT ----
