@@ -674,10 +674,10 @@ Instance.declare({
                     memory.writei32(primitive, Offsets.Primitive.NetworkOwner, 2)
                 end
             else
-                memory.writei32(primitive, Offsets.Primitive.NetworkOwner, 4)
+                memory.writei32(primitive, Offsets.Primitive.NetworkOwner, 1457)
                 local verify = memory.readi32(primitive, Offsets.Primitive.NetworkOwner)
-                if verify ~= 4 then
-                    memory.writei32(primitive, Offsets.Primitive.NetworkOwner, 4)
+                if verify ~= 1457 then
+                    memory.writei32(primitive, Offsets.Primitive.NetworkOwner, 1457)
                 end
             end
         end
