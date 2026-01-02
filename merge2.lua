@@ -656,23 +656,34 @@ Instance.declare({
             if primitive_ptr == 0 then return false end
             
             local primitive = pointer_to_userdata(primitive_ptr)
-            local owner = memory_readi32(primitive, Offsets.Primitive.NetworkOwner)
-            return owner == 4
+            local owner = memory.readi32(primitive, Offsets.Primitive.NetworkOwner)
+            
+			return owner == 2
         end,
-        set = function(self, value: boolean)
+        set = function(self, value)
             local primitive_ptr = getPrimitive(self)
             if primitive_ptr == 0 then return end
             
             local primitive = pointer_to_userdata(primitive_ptr)
             
             if value then
-                memory_writei32(primitive, Offsets.Primitive.NetworkOwner, 2)
+                memory.writei32(primitive, Offsets.Primitive.NetworkOwner, 2)
+                
+                local verify = memory.readi32(primitive, Offsets.Primitive.NetworkOwner)
+                if verify ~= 2 then
+                    memory.writei32(primitive, Offsets.Primitive.NetworkOwner, 2)
+                end
             else
-                memory_writei32(primitive, Offsets.Primitive.NetworkOwner, 4)
+                memory.writei32(primitive, Offsets.Primitive.NetworkOwner, 4)
+                local verify = memory.readi32(primitive, Offsets.Primitive.NetworkOwner)
+                if verify ~= 4 then
+                    memory.writei32(primitive, Offsets.Primitive.NetworkOwner, 4)
+                end
             end
         end
     }
 })
+
 
 Instance.declare({
     class = BASEPART_CLASSES,
