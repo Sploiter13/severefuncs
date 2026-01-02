@@ -657,7 +657,7 @@ Instance.declare({
             
             local primitive = pointer_to_userdata(primitive_ptr)
             local owner = memory_readi32(primitive, Offsets.Primitive.NetworkOwner)
-            return owner == 2
+            return owner == 4
         end,
         set = function(self, value: boolean)
             local primitive_ptr = getPrimitive(self)
