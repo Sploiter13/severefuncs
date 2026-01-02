@@ -647,6 +647,8 @@ Instance.declare({
     }
 })
 
+_G.OriginalNetworkOwners = _G.OriginalNetworkOwners or {}
+
 Instance.declare({
     class = BASEPART_CLASSES,
     name = "Anchored",
@@ -658,26 +660,25 @@ Instance.declare({
             local primitive = pointer_to_userdata(primitive_ptr)
             local owner = memory.readi32(primitive, Offsets.Primitive.NetworkOwner)
             
-			return owner == 2
+            return owner == 2
         end,
         set = function(self, value)
             local primitive_ptr = getPrimitive(self)
             if primitive_ptr == 0 then return end
             
             local primitive = pointer_to_userdata(primitive_ptr)
+            local address = tonumber(self.Data, 16)
+            
+            if not _G.OriginalNetworkOwners[address] then
+                _G.OriginalNetworkOwners[address] = memory.readi32(primitive, Offsets.Primitive.NetworkOwner)
+            end
             
             if value then
                 memory.writei32(primitive, Offsets.Primitive.NetworkOwner, 2)
-                
-                local verify = memory.readi32(primitive, Offsets.Primitive.NetworkOwner)
-                if verify ~= 2 then
-                    memory.writei32(primitive, Offsets.Primitive.NetworkOwner, 2)
-                end
             else
-                memory.writei32(primitive, Offsets.Primitive.NetworkOwner, 1457)
-                local verify = memory.readi32(primitive, Offsets.Primitive.NetworkOwner)
-                if verify ~= 1457 then
-                    memory.writei32(primitive, Offsets.Primitive.NetworkOwner, 1457)
+                local original = _G.OriginalNetworkOwners[address]
+                if original then
+                    memory.writei32(primitive, Offsets.Primitive.NetworkOwner, original)
                 end
             end
         end
