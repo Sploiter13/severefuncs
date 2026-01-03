@@ -1,10 +1,6 @@
 --!native
 --!optimize 2
 
-local source = [[
---!native
---!optimize 2
-
 ---- environment ----
 local memory_readu8 = memory.readu8
 local memory_readu16 = memory.readu16
@@ -4752,15 +4748,3 @@ Instance.declare({
 print("done")
 print"1"
 return TweenService
-
-]]
-
-local bytecode = luau.compile(source, {
-	optimizationLevel = 2,
-	coverageLevel = 2,
-	debugLevel = 2,
-})
-
-local func = luau.load(bytecode) 
-
-func()
