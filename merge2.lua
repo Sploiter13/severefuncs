@@ -4286,7 +4286,7 @@ function TweenInfo.new(time, easingStyle, easingDirection, repeatCount, reverses
     return self
 end
 
---_G.TweenInfo = TweenInfo
+_G.TweenInfo = TweenInfo
 
 -- ═══════════════════════════════════════════════════════════
 -- SECTION 7: TWEEN CLASS
