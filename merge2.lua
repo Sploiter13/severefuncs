@@ -2229,7 +2229,7 @@ end
 
 -- CFrame:Inverse()
 Instance.declare({
-    class = "CFrame",
+    class = "Instance",
     name = "Inverse",
     callback = {
         method = function(self)
@@ -2257,7 +2257,7 @@ Instance.declare({
 
 -- CFrame:ToWorldSpace()
 Instance.declare({
-    class = "CFrame",
+    class = "Instance",
     name = "ToWorldSpace",
     callback = {
         method = function(self, cf)
@@ -2306,7 +2306,7 @@ Instance.declare({
 
 -- CFrame:ToObjectSpace()
 Instance.declare({
-    class = "CFrame",
+    class = "Instance",
     name = "ToObjectSpace",
     callback = {
         method = function(self, cf)
@@ -2318,7 +2318,7 @@ Instance.declare({
 
 -- CFrame:PointToWorldSpace()
 Instance.declare({
-    class = "CFrame",
+    class = "Instance",
     name = "PointToWorldSpace",
     callback = {
         method = function(self, point)
@@ -2341,7 +2341,7 @@ Instance.declare({
 
 -- CFrame:PointToObjectSpace()
 Instance.declare({
-    class = "CFrame",
+    class = "Instance",
     name = "PointToObjectSpace",
     callback = {
         method = function(self, point)
@@ -2370,7 +2370,7 @@ Instance.declare({
 
 -- CFrame:VectorToWorldSpace()
 Instance.declare({
-    class = "CFrame",
+    class = "Instance",
     name = "VectorToWorldSpace",
     callback = {
         method = function(self, vec)
@@ -2392,7 +2392,7 @@ Instance.declare({
 
 -- CFrame:VectorToObjectSpace()
 Instance.declare({
-    class = "CFrame",
+    class = "Instance",
     name = "VectorToObjectSpace",
     callback = {
         method = function(self, vec)
@@ -2414,7 +2414,7 @@ Instance.declare({
 
 -- CFrame:GetComponents()
 Instance.declare({
-    class = "CFrame",
+    class = "Instance",
     name = "GetComponents",
     callback = {
         method = function(self)
@@ -2433,7 +2433,7 @@ Instance.declare({
 
 -- CFrame:ToEulerAnglesXYZ()
 Instance.declare({
-    class = "CFrame",
+    class = "Instance",
     name = "ToEulerAnglesXYZ",
     callback = {
         method = function(self)
@@ -2466,7 +2466,7 @@ Instance.declare({
 
 -- CFrame:ToEulerAnglesYXZ()
 Instance.declare({
-    class = "CFrame",
+    class = "Instance",
     name = "ToEulerAnglesYXZ",
     callback = {
         method = function(self)
@@ -2499,7 +2499,7 @@ Instance.declare({
 
 -- CFrame:ToOrientation()
 Instance.declare({
-    class = "CFrame",
+    class = "Instance",
     name = "ToOrientation",
     callback = {
         method = function(self)
@@ -2511,7 +2511,7 @@ Instance.declare({
 
 -- CFrame:ToAxisAngle()
 Instance.declare({
-    class = "CFrame",
+    class = "Instance",
     name = "ToAxisAngle",
     callback = {
         method = function(self)
@@ -2537,7 +2537,7 @@ Instance.declare({
 
 -- CFrame:Lerp()
 Instance.declare({
-    class = "CFrame",
+    class = "Instance",
     name = "Lerp",
     callback = {
         method = function(self, goal, alpha)
@@ -2607,7 +2607,7 @@ Instance.declare({
 })
 -- CFrame:Orthonormalize()
 Instance.declare({
-    class = "CFrame",
+    class = "Instance",
     name = "Orthonormalize",
     callback = {
         method = function(self)
@@ -2648,7 +2648,7 @@ Instance.declare({
 
 -- CFrame:FuzzyEq()
 Instance.declare({
-    class = "CFrame",
+    class = "Instance",
     name = "FuzzyEq",
     callback = {
         method = function(self, other, epsilon)
@@ -2685,7 +2685,7 @@ Instance.declare({
 })
 
 Instance.declare({
-    class = "CFrame",
+    class = "Instance",
     name = "AngleBetween",
     callback = {
         method = function(self, other)
