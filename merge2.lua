@@ -113,7 +113,11 @@ local Offsets = {
         BorderSizePixel = 0x57C,
         Position = 0x520,
         Size = 0x540,
-        AnchorPoint = 0x568
+        AnchorPoint = 0x568,
+		AbsolutePositionX = 0x0110,
+	    AbsolutePositionY = 0x0114,
+    	AbsoluteSizeX = 0x0118,
+    	AbsoluteSizeY = 0x011C,
     },
     
     TextLabel = {
@@ -336,52 +340,6 @@ end
 
 local function newVector2(x, y)
     return { X = x, Y = y }
-end
-
-local GUI_INSET_Y = 58  
-
-local GetCalculatedAbsoluteSize
-local GetCalculatedAbsolutePosition
-
-GetCalculatedAbsoluteSize = function(instance)
-    if not instance or instance.ClassName == "ScreenGui" or instance == game then
-        local vp = Camera.ViewportSize
-        return vp.X, vp.Y - GUI_INSET_Y
-    end
-    
-    local pW, pH = GetCalculatedAbsoluteSize(instance.Parent)
-    
-    if not instance.Data or instance.Data == 0 then 
-        return 0, 0 
-    end
-    
-    local sx, ox, sy, oy = readUDim2(instance.Data, Offsets.GuiObject.Size)
-    return (pW * sx) + ox, (pH * sy) + oy
-end
-
-GetCalculatedAbsolutePosition = function(instance)
-    if not instance or instance.ClassName == "ScreenGui" or instance == game then
-        return 0, 0
-    end
-    
-    local pX, pY = GetCalculatedAbsolutePosition(instance.Parent)
-    local pW, pH = GetCalculatedAbsoluteSize(instance.Parent)
-    
-    if not instance.Data or instance.Data == 0 then 
-        return 0, 0 
-    end
-    
-    local px, pox, py, poy = readUDim2(instance.Data, Offsets.GuiObject.Position)
-    local anchorPosX = pX + (pW * px) + pox
-    local anchorPosY = pY + (pH * py) + poy
-    
-    local myW, myH = GetCalculatedAbsoluteSize(instance)
-    local anchorX, anchorY = readVector2(instance.Data, Offsets.GuiObject.AnchorPoint)
-    
-    local finalX = anchorPosX - (myW * anchorX)
-    local finalY = anchorPosY - (myH * anchorY)
-    
-    return finalX, finalY
 end
 
 local function readMaterialColor(terrain, materialIndex)
@@ -1190,19 +1148,22 @@ Instance.declare({
     name = "AbsolutePosition",
     callback = {
         get = function(self)
-            local x, y = GetCalculatedAbsolutePosition(self)
+            if not self.Data or self.Data == 0 then return newVector2(0, 0) end
+            local x = memory_readf32(self.Data, Offsets.GuiObject.AbsolutePositionX)
+            local y = memory_readf32(self.Data, Offsets.GuiObject.AbsolutePositionY)
             return newVector2(x, y)
         end
     }
 })
-
 
 Instance.declare({
     class = GUI_CLASSES,
     name = "AbsoluteSize",
     callback = {
         get = function(self)
-            local w, h = GetCalculatedAbsoluteSize(self)
+            if not self.Data or self.Data == 0 then return newVector2(0, 0) end
+            local w = memory_readf32(self.Data, Offsets.GuiObject.AbsoluteSizeX)
+            local h = memory_readf32(self.Data, Offsets.GuiObject.AbsoluteSizeY)
             return newVector2(w, h)
         end
     }
