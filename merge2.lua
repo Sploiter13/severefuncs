@@ -795,16 +795,18 @@ Instance.declare({
 
 Instance.declare({
     class = "Humanoid",
-    name = "WalkToPoint",
+    name = "MoveDirection",
     callback = {
         get = function(self)
-            return memory_readvector(self, Offsets.Humanoid.WalkToPoint)
+            local raw = memory_readvector(self, Offsets.Humanoid.MoveDirection)
+            return vector.create(round(raw.X, 3), round(raw.Y, 3), round(raw.Z, 3))
         end,
         set = function(self, value)
-            memory_writevector(self, Offsets.Humanoid.WalkToPoint, toVector(value))
+            memory_writevector(self, Offsets.Humanoid.MoveDirection, value)
         end
     }
 })
+
 
 Instance.declare({
     class = "Humanoid",
