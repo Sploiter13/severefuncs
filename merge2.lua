@@ -121,7 +121,7 @@ local Offsets = {
     },
     
     TextLabel = {
-        Text = 0xE40,
+        Text = 0xE48,
         TextColor3 = 0xEF0,
         TextSize = 0xD1C,
         TextTransparency = 0xF24,
@@ -131,11 +131,11 @@ local Offsets = {
     },
 
     TextButton = {
-        Text = 0x1120
+        Text = 0x1128
     },
 
     TextBox = {
-        Text = 0xAD8
+        Text = 0xAE0
     },
     
     Lighting = {
