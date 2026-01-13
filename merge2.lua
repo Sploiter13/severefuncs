@@ -63,17 +63,17 @@ local Offsets = {
         AssemblyLinearVelocity = 0xF0,
         AssemblyAngularVelocity = 0xFC,
         Material = 0x226,
-        Anchored = 0xD20,
-        NetworkOwner = 0x228,
+        Anchored = 0xD71, 
+        NetworkOwner = 0x228, 
         CanQuery = 0xD75,
-        CanTouch = 0xD74,
-        EnableFluidForces = 0x126E,
+        CanTouch = 0xD74, 
+        EnableFluidForces = 0x126E, 
         FrontSurface = 0x225,
         BackSurface = 0x222,
-        LeftSurface = 0x223,
+        LeftSurface = 0x223, 
         RightSurface = 0x220,
-        TopSurface = 0x221,
-        BottomSurface = 0x224
+        TopSurface = 0x221, 
+        BottomSurface = 0x224 
     },
     
     Humanoid = {
@@ -99,56 +99,56 @@ local Offsets = {
     },
     
     GuiObject = {
-        Active = 0x5B4,
-        ClipsDescendants = 0x5B5,
-        Draggable = 0x5B6,
-        Selectable = 0x5B8,
-        Visible = 0x5B9,
-        BackgroundTransparency = 0x574,
-        BackgroundColor3 = 0x550,
-        BorderColor3 = 0x55C,
+        Active = 0x5BC,
+        ClipsDescendants = 0x5BD,
+        Draggable = 0x5BE,
+        Selectable = 0x5C0,
+        Visible = 0x5C1,
+        BackgroundTransparency = 0x57C,
+        BackgroundColor3 = 0x558,
+        BorderColor3 = 0x564,
         Rotation = 0x188,
-        LayoutOrder = 0x58C,
-        ZIndex = 0x5B0,
-        BorderSizePixel = 0x57C,
-        Position = 0x520,
-        Size = 0x540,
-        AnchorPoint = 0x568,
-		AbsolutePositionX = 0x0110,
-	    AbsolutePositionY = 0x0114,
-    	AbsoluteSizeX = 0x0118,
-    	AbsoluteSizeY = 0x011C,
+        LayoutOrder = 0x594,
+        ZIndex = 0x5B8,
+        BorderSizePixel = 0x584,
+        Position = 0x528,
+        Size = 0x548,
+        AnchorPoint = 0x570,
+		AbsolutePositionX = 0x110,
+	    AbsolutePositionY = 0x114,
+    	AbsoluteSizeX = 0x118,
+    	AbsoluteSizeY = 0x11C,
     },
     
     TextLabel = {
         Text = 0xE48,
-        TextColor3 = 0xEF0,
-        TextSize = 0xD1C,
-        TextTransparency = 0xF24,
-        TextStrokeColor3 = 0xEFC,
-        TextStrokeTransparency = 0xF20,
-        LineHeight = 0xB54
+        TextColor3 = 0xEF8,
+        TextSize = 0xD24,
+        TextTransparency = 0xF2C,
+        TextStrokeColor3 = 0xF04,
+        TextStrokeTransparency = 0xF28,
+        LineHeight = 0xB5C
     },
 
     TextButton = {
-        Text = 0x1128
+        Text = 0x10C8
     },
 
     TextBox = {
-        Text = 0xAE0
+        Text = 0xE40
     },
     
     Lighting = {
         Ambient = 0xD8,
         Brightness = 0x120,
         ClockTime = 0x1B8,
-        ColorShift_Bottom = 0xF0,
-        ColorShift_Top = 0xE4,
-        ExposureCompensation = 0x12C,
-        FogColor = 0xFC,
-        FogEnd = 0x134,
-        FogStart = 0x138,
-        GeographicLatitude = 0x190,
+        ColorShift_Bottom = 0xE4,
+        ColorShift_Top = 0xF0,
+        ExposureCompensation = 0x12C, 
+        FogColor = 0xFC, 
+        FogEnd = 0x134, 
+        FogStart = 0x138, 
+        GeographicLatitude = 0x190, 
         OutdoorAmbient = 0x108
     },
     
@@ -204,12 +204,12 @@ local Offsets = {
     },
     
     Tool = {
-        CanBeDropped = 0x490,
-        Enabled = 0x491,
-        ManualActivationOnly = 0x492,
-        RequiresHandle = 0x493,
-        ToolTip = 0x440,
-        GripPos = 0x484
+        CanBeDropped = 0x498,
+        Enabled = 0x499,
+        ManualActivationOnly = 0x49A,
+        RequiresHandle = 0x49B,
+        ToolTip = 0x448,
+        GripPos = 0x48C
     },
 
     Camera = {
@@ -218,21 +218,21 @@ local Offsets = {
 
     AnimationTrack = {
         Animation = 0xD0,
-        Animator = 0x118,
-        IsPlaying = 0x2BD,
+        Animator = 0x118, 
+        IsPlaying = 0x518, 
         Looped = 0xF5,
-        Speed = 0xE4,
+        Speed = 0xE4, 
         AnimationId = 0xD0
     },
 
     Terrain = {
-        GrassLength = 0x1F0,
-        MaterialColors = 0x278,
-        WaterColor = 0x1E0,
-        WaterReflectance = 0x1F8,
-        WaterTransparency = 0x1FC,
-        WaterWaveSize = 0x200,
-        WaterWaveSpeed = 0x204
+        GrassLength = 0x1F8,
+        MaterialColors = 0x280,
+        WaterColor = 0x1E8,
+        WaterReflectance = 0x200,
+        WaterTransparency = 0x204,
+        WaterWaveSize = 0x208,
+        WaterWaveSpeed = 0x20C
     },
 
     MaterialColors = {
