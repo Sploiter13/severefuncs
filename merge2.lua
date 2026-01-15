@@ -65,11 +65,11 @@ local Offsets = {
         Material = 0x226,
         Anchored = 0xD71, 
         NetworkOwner = 0x228, 
-        CanQuery = 0xD75,
+        CanQuery = 0xD75, 
         CanTouch = 0xD74, 
         EnableFluidForces = 0x126E, 
-        FrontSurface = 0x225,
-        BackSurface = 0x222,
+        FrontSurface = 0x225, 
+        BackSurface = 0x222, 
         LeftSurface = 0x223, 
         RightSurface = 0x220,
         TopSurface = 0x221, 
@@ -99,10 +99,10 @@ local Offsets = {
     },
     
     GuiObject = {
-        Active = 0x5BC,
-        ClipsDescendants = 0x5BD,
-        Draggable = 0x5BE,
-        Selectable = 0x5C0,
+        Active = 0x5BC, 
+        ClipsDescendants = 0x5BD, 
+        Draggable = 0x5BE, 
+        Selectable = 0x5C0, 
         Visible = 0x5C1,
         BackgroundTransparency = 0x57C,
         BackgroundColor3 = 0x558,
@@ -113,7 +113,7 @@ local Offsets = {
         BorderSizePixel = 0x584,
         Position = 0x528,
         Size = 0x548,
-        AnchorPoint = 0x570,
+        AnchorPoint = 0x360, 
 		AbsolutePositionX = 0x110,
 	    AbsolutePositionY = 0x114,
     	AbsoluteSizeX = 0x118,
@@ -121,21 +121,21 @@ local Offsets = {
     },
     
     TextLabel = {
-        Text = 0xE48,
-        TextColor3 = 0xEF8,
-        TextSize = 0xD24,
-        TextTransparency = 0xF2C,
-        TextStrokeColor3 = 0xF04,
-        TextStrokeTransparency = 0xF28,
-        LineHeight = 0xB5C
+        Text = 0xE28,
+        TextColor3 = 0xED8, 
+        TextSize = 0xD04, 
+        TextTransparency = 0xF0C,
+        TextStrokeColor3 = 0xEE4,
+        TextStrokeTransparency = 0xF08, 
+        LineHeight = 0xB3C
     },
 
     TextButton = {
-        Text = 0x10C8
+        Text = 0x10A8 
     },
 
     TextBox = {
-        Text = 0xE40
+        Text = 0xE20
     },
     
     Lighting = {
@@ -204,12 +204,12 @@ local Offsets = {
     },
     
     Tool = {
-        CanBeDropped = 0x498,
-        Enabled = 0x499,
-        ManualActivationOnly = 0x49A,
-        RequiresHandle = 0x49B,
-        ToolTip = 0x448,
-        GripPos = 0x48C
+        CanBeDropped = 0x4A0,
+        Enabled = 0x4A1, 
+        ManualActivationOnly = 0x4A2,
+        RequiresHandle = 0x4A3, 
+        ToolTip = 0x450, 
+        GripPos = 0x494 
     },
 
     Camera = {
@@ -220,7 +220,7 @@ local Offsets = {
         Animation = 0xD0,
         Animator = 0x118, 
         IsPlaying = 0x518, 
-        Looped = 0xF5,
+        Looped = 0xF5, 
         Speed = 0xE4, 
         AnimationId = 0xD0
     },
@@ -260,7 +260,6 @@ local Offsets = {
     },
 
 }
-
 
 ---- variables ----
 local Camera = workspace.CurrentCamera
