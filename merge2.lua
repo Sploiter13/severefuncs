@@ -62,9 +62,9 @@ local Offsets = {
     Primitive = {
         AssemblyLinearVelocity = 0xF0,
         AssemblyAngularVelocity = 0xFC,
-        Material = 0x226,
+        Material = 0x246,
         Anchored = 0xD71, 
-        NetworkOwner = 0x228, 
+        NetworkOwner = 0x248, 
         CanQuery = 0xD75, 
         CanTouch = 0xD74, 
         EnableFluidForces = 0x126E, 
@@ -113,11 +113,11 @@ local Offsets = {
         BorderSizePixel = 0x584,
         Position = 0x528,
         Size = 0x548,
-        AnchorPoint = 0x360, 
-		AbsolutePositionX = 0x110,
-	    AbsolutePositionY = 0x114,
-    	AbsoluteSizeX = 0x118,
-    	AbsoluteSizeY = 0x11C,
+        AnchorPoint = 0x570, 
+        AbsolutePositionX = 0x110,
+        AbsolutePositionY = 0x114,
+        AbsoluteSizeX = 0x118,
+        AbsoluteSizeY = 0x11C,
     },
     
     TextLabel = {
@@ -260,6 +260,7 @@ local Offsets = {
     },
 
 }
+
 
 ---- variables ----
 local Camera = workspace.CurrentCamera
