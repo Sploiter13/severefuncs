@@ -63,17 +63,17 @@ local Offsets = {
         AssemblyLinearVelocity = 0xF0,
         AssemblyAngularVelocity = 0xFC,
         Material = 0x246,
-        Anchored = 0xD71, 
-        NetworkOwner = 0x248, 
-        CanQuery = 0xD75, 
-        CanTouch = 0xD74, 
-        EnableFluidForces = 0x126E, 
-        FrontSurface = 0x225, 
-        BackSurface = 0x222, 
-        LeftSurface = 0x223, 
+        Anchored = 0xD71,
+        NetworkOwner = 0x248,
+        CanQuery = 0xD75,
+        CanTouch = 0xD74,
+        EnableFluidForces = 0x126E,
+        FrontSurface = 0x225,
+        BackSurface = 0x222,
+        LeftSurface = 0x223,
         RightSurface = 0x220,
-        TopSurface = 0x221, 
-        BottomSurface = 0x224 
+        TopSurface = 0x221,
+        BottomSurface = 0x224
     },
     
     Humanoid = {
@@ -99,43 +99,43 @@ local Offsets = {
     },
     
     GuiObject = {
-        Active = 0x5BC, 
-        ClipsDescendants = 0x5BD, 
-        Draggable = 0x5BE, 
-        Selectable = 0x5C0, 
-        Visible = 0x5C1,
-        BackgroundTransparency = 0x57C,
-        BackgroundColor3 = 0x558,
-        BorderColor3 = 0x564,
+        Active = 0x5BC,
+        ClipsDescendants = 0x5BD,
+        Draggable = 0x5BE,
+        Selectable = 0x5C0,
+        Visible = 0x5B1,
+        BackgroundTransparency = 0x56C,
+        BackgroundColor3 = 0x548,
+        BorderColor3 = 0x554,
         Rotation = 0x188,
-        LayoutOrder = 0x594,
-        ZIndex = 0x5B8,
-        BorderSizePixel = 0x584,
+        LayoutOrder = 0x584,
+        ZIndex = 0x5A8,
+        BorderSizePixel = 0x574,
         Position = 0x528,
-        Size = 0x548,
-        AnchorPoint = 0x570, 
-        AbsolutePositionX = 0x110,
-        AbsolutePositionY = 0x114,
-        AbsoluteSizeX = 0x118,
-        AbsoluteSizeY = 0x11C,
+        Size = 0x538,
+        AnchorPoint = 0x560,
+        AbsolutePositionX = 0x2510,
+        AbsolutePositionY = 0x2514,
+        AbsoluteSizeX = 0x2518,
+        AbsoluteSizeY = 0x251C,
     },
     
     TextLabel = {
-        Text = 0xE28,
-        TextColor3 = 0xED8, 
-        TextSize = 0xD04, 
-        TextTransparency = 0xF0C,
-        TextStrokeColor3 = 0xEE4,
-        TextStrokeTransparency = 0xF08, 
-        LineHeight = 0xB3C
+        Text = 0xE08,
+        TextColor3 = 0xEB8,
+        TextSize = 0xCE4,
+        TextTransparency = 0xEEC,
+        TextStrokeColor3 = 0xEC4,
+        TextStrokeTransparency = 0xEE8,
+        LineHeight = 0xB1C
     },
 
     TextButton = {
-        Text = 0x10A8 
+        Text = 0x1088
     },
 
     TextBox = {
-        Text = 0xE20
+        Text = 0xE00
     },
     
     Lighting = {
@@ -144,11 +144,11 @@ local Offsets = {
         ClockTime = 0x1B8,
         ColorShift_Bottom = 0xE4,
         ColorShift_Top = 0xF0,
-        ExposureCompensation = 0x12C, 
-        FogColor = 0xFC, 
-        FogEnd = 0x134, 
-        FogStart = 0x138, 
-        GeographicLatitude = 0x190, 
+        ExposureCompensation = 0x12C,
+        FogColor = 0xFC,
+        FogEnd = 0x134,
+        FogStart = 0x138,
+        GeographicLatitude = 0x190,
         OutdoorAmbient = 0x108
     },
     
@@ -205,11 +205,11 @@ local Offsets = {
     
     Tool = {
         CanBeDropped = 0x4A0,
-        Enabled = 0x4A1, 
+        Enabled = 0x4A1,
         ManualActivationOnly = 0x4A2,
-        RequiresHandle = 0x4A3, 
-        ToolTip = 0x450, 
-        GripPos = 0x494 
+        RequiresHandle = 0x4A3,
+        ToolTip = 0x450,
+        GripPos = 0x494
     },
 
     Camera = {
@@ -218,10 +218,10 @@ local Offsets = {
 
     AnimationTrack = {
         Animation = 0xD0,
-        Animator = 0x118, 
-        IsPlaying = 0x518, 
-        Looped = 0xF5, 
-        Speed = 0xE4, 
+        Animator = 0x118,
+        IsPlaying = 0x518,
+        Looped = 0xF5,
+        Speed = 0xE4,
         AnimationId = 0xD0
     },
 
@@ -260,6 +260,7 @@ local Offsets = {
     },
 
 }
+
 
 
 ---- variables ----
