@@ -2051,45 +2051,50 @@ Instance.declare({
     name = "GetPlayingAnimationTracks",
     callback = {
         method = function(self)
-            print("[DEBUG] GetPlayingAnimationTracks called")
-            print("[DEBUG] Animator offset:", Offsets.Animator.ActiveAnimations)
-            
-            local Head = memory_readu64(self, Offsets.Animator.ActiveAnimations)
-            print("[DEBUG] Head pointer:", string.format("0x%X", Head))
-            
-            if Head == 0 then
-                print("[DEBUG] Head is 0, returning empty table")
+        
+            if not Offsets.Animator or not Offsets.Animator.ActiveAnimations then
+                warn("[Animator] ActiveAnimations offset not found")
                 return {}
             end
             
-            local Node = memory_readu64(Head)
-            print("[DEBUG] First node:", string.format("0x%X", Node))
-            
-            local Result = {}
-            local count = 0
-            
-            while Node ~= 0 and Node ~= Head do
-                count = count + 1
-                if count > 100 then
-                    print("[DEBUG] Breaking: too many iterations")
-                    break
+            local success, result = pcall(function()
+                local Head = memory_readu64(self, Offsets.Animator.ActiveAnimations)
+                
+                if Head == 0 then
+                    return {}
                 end
                 
-                local Track = memory_readu64(Node + 0x10)
-                print(string.format("[DEBUG] Node %d: Track at 0x%X", count, Track))
+                local Node = memory_readu64(Head)
+                local Result = {}
+                local count = 0
                 
-                if Track ~= 0 then
-                    local trackUserdata = pointer_to_userdata(Track)
-                    table.insert(Result, trackUserdata)
-                    print("[DEBUG] Added track:", trackUserdata)
+                while Node ~= 0 and Node ~= Head and count < 100 do
+                    count = count + 1
+                    
+                    local Track = memory_readu64(Node + 0x10)
+                    
+                    if Track ~= 0 then
+            
+                        if _G.pointer_to_userdata then
+                            table.insert(Result, pointer_to_userdata(Track))
+                        else
+    
+                            table.insert(Result, Track)
+                        end
+                    end
+                    
+                    Node = memory_readu64(Node)
                 end
                 
-                Node = memory_readu64(Node)
-                print(string.format("[DEBUG] Next node: 0x%X", Node))
+                return Result
+            end)
+            
+            if success then
+                return result
+            else
+                warn("[Animator] Error getting tracks:", result)
+                return {}
             end
-            
-            print("[DEBUG] Total tracks found:", #Result)
-            return Result
         end
     }
 })
