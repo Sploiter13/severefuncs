@@ -1017,16 +1017,14 @@ Instance.declare({
                     end
                     memory_writevector(self, Offsets.Humanoid.WalkToPoint, targetPosition)
                     memory_writeu8(self, Offsets.Humanoid.IsWalking, 1)
-                    
-                    task.wait(0.03)
-                end
+                    end
             end
             
             task.spawn(moveLoop)
             
             if waitForComplete then
                 while not finished do
-                    task.wait(0.1)
+					continue
                 end
             end
         end
