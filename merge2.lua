@@ -1015,7 +1015,7 @@ Instance.declare({
                     
                     memory_writevector(self, Offsets.Humanoid.WalkToPoint, targetPosition)
                     memory_writeu8(self, Offsets.Humanoid.IsWalking, 1)
-                    
+                    task.wait(0.03)
                 end
             end)
         end
