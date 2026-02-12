@@ -250,6 +250,10 @@ local Offsets = {
         AnimationId = getOffset("Misc", "AnimationId")
     },
 
+	Animator = {
+    ActiveAnimations = getOffset("Animator", "ActiveAnimations")
+	},
+
     Terrain = {
         GrassLength = getOffset("Terrain", "GrassLength"),
         MaterialColors = getOffset("Terrain", "MaterialColors"),
