@@ -2042,7 +2042,31 @@ Instance.declare({
     }
 })
 
-
+Instance.declare({
+    class = "Animator",
+    name = "GetPlayingAnimationTracks",
+    callback = {
+        method = function(self)
+            local Head = memory_readu64(self, Offsets.Animator.ActiveAnimations)
+            if Head == 0 then
+                return {}
+            end
+            
+            local Node = memory_readu64(Head)
+            local Result = {}
+            
+            while Node ~= 0 and Node ~= Head do
+                local Track = memory_readu64(Node + 0x10)
+                if Track ~= 0 then
+                    table.insert(Result, pointer_to_userdata(Track))
+                end
+                Node = memory_readu64(Node)
+            end
+            
+            return Result
+        end
+    }
+})
 
 -- ═══════════════════════════════════════════════════════════
 -- TERRAIN PROPERTIES
