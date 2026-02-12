@@ -992,32 +992,7 @@ Instance.declare({
                 return
             end
             
-            local character = self.Parent
-            if not character then
-                warn("[Humanoid:MoveTo] No parent character")
-                return
-            end
-            
-            local hrp = character:FindFirstChild("HumanoidRootPart")
-            if not hrp then
-                warn("[Humanoid:MoveTo] No HumanoidRootPart found")
-                return
-            end
-            
-            task.spawn(function()
-                while true do
-                    local currentPos = hrp.Position
-                    
-                    if math.abs(currentPos.X - targetPosition.X) <= 1 and 
-                       math.abs(currentPos.Z - targetPosition.Z) <= 1 then
-                        break
-                    end
-                    
-                    memory_writevector(self, Offsets.Humanoid.WalkToPoint, targetPosition)
-                    memory_writeu8(self, Offsets.Humanoid.IsWalking, 1)
-                    task.wait(0.03)
-                end
-            end)
+            memory_writevector(self, Offsets.Humanoid.WalkToPoint, targetPosition)
         end
     }
 })
