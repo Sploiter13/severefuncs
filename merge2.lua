@@ -38,230 +38,252 @@ local GUI_CLASSES = {"Frame", "TextLabel", "TextButton", "TextBox", "ImageLabel"
 local TEXT_CLASSES = {"TextLabel", "TextButton", "TextBox"}
 
 ---- offsets ----
+-- Fetch offsets from both sources
+local response1 = game:HttpGet("https://dumper.jonah.cool/offsets.json")
+assert(response1, "Failed to fetch offsets from dumper.jonah.cool")
+local JonahOffsets = crypt.json.decode(response1)
+
+local response2 = game:HttpGet("https://imtheo.lol/Offsets/Offsets.json")
+assert(response2, "Failed to fetch offsets from imtheo.lol")
+local TheoOffsets = crypt.json.decode(response2)
+
+-- Convert decimal to hex
+local function hex(dec)
+    return dec and tonumber(dec) and string.format("0x%X", dec) or nil
+end
+
+-- Get offset from sources (prefer Jonah, fallback to Theo)
+local function getOffset(class, field)
+    local s1 = JonahOffsets.offsets
+    local s2 = TheoOffsets.Offsets
+    
+    local value = (s1 and s1[class] and s1[class][field]) or (s2 and s2[class] and s2[class][field])
+    return hex(value)
+end
+
+-- Build the table
 local Offsets = {
     Atmosphere = {
-        Color = 0xD0,
-        Decay = 0xDC,
-        Density = 0xE8,
-        Glare = 0xEC,
-        Haze = 0xF0,
-        Offset = 0xF4
+        Color = getOffset("Atmosphere", "Color"),
+        Decay = getOffset("Atmosphere", "Decay"),
+        Density = getOffset("Atmosphere", "Density"),
+        Glare = getOffset("Atmosphere", "Glare"),
+        Haze = getOffset("Atmosphere", "Haze"),
+        Offset = getOffset("Atmosphere", "Offset")
     },
     
     BasePart = {
-        Primitive = 0x148,
-        Reflectance = 0xEC,
-        Color = 0x194,
-        CastShadow = 0xF5,
-        Locked = 0xF6,
-        Massless = 0xF7,
-        Shape = 0x1B1,
-        Rotation = 0xC0
+        Primitive = getOffset("BasePart", "Primitive"),
+        Reflectance = getOffset("BasePart", "Reflectance"),
+        Color = getOffset("BasePart", "Color3"),
+        CastShadow = getOffset("BasePart", "CastShadow"),
+        Locked = getOffset("BasePart", "Locked"),
+        Massless = getOffset("BasePart", "Massless"),
+        Shape = getOffset("BasePart", "Shape"),
+        Rotation = getOffset("BasePart", "Rotation")
     },
     
     Primitive = {
-        AssemblyLinearVelocity = 0xF0,
-        AssemblyAngularVelocity = 0xFC,
-        Material = 0x246,
-        Anchored = 0xD71,
-        NetworkOwner = 0x248,
-        CanQuery = 0xD75,
-        CanTouch = 0xD74,
-        EnableFluidForces = 0x126E,
-        FrontSurface = 0x225,
-        BackSurface = 0x222,
-        LeftSurface = 0x223,
-        RightSurface = 0x220,
-        TopSurface = 0x221,
-        BottomSurface = 0x224
+        AssemblyLinearVelocity = getOffset("Primitive", "AssemblyLinearVelocity"),
+        AssemblyAngularVelocity = getOffset("Primitive", "AssemblyAngularVelocity"),
+        Material = getOffset("Primitive", "Material"),
+        Anchored = getOffset("PrimitiveFlags", "Anchored"),
+        NetworkOwner = getOffset("Primitive", "NetworkOwner"),
+        CanQuery = getOffset("Primitive", "CanQuery"),
+        CanTouch = getOffset("PrimitiveFlags", "CanTouch"),
+        EnableFluidForces = getOffset("Primitive", "EnableFluidForces"),
+        FrontSurface = getOffset("Primitive", "FrontSurface"),
+        BackSurface = getOffset("Primitive", "BackSurface"),
+        LeftSurface = getOffset("Primitive", "LeftSurface"),
+        RightSurface = getOffset("Primitive", "RightSurface"),
+        TopSurface = getOffset("Primitive", "TopSurface"),
+        BottomSurface = getOffset("Primitive", "BottomSurface")
     },
     
     Humanoid = {
-        HipHeight = 0x1A0,
-        MaxSlopeAngle = 0x1B8,
-        WalkSpeed = 0x1D4,
-        WalkSpeedCheck = 0x3C0,
-        JumpPower = 0x1B0,
-        JumpHeight = 0x1AC,
-        MoveDirection = 0x158,
-        WalkToPoint = 0x17C,
-        IsWalking = 0x956,
-        HealthDisplayDistance = 0x198,
-        NameDisplayDistance = 0x1BC,
-        AutoRotate = 0x1D9,
-        AutoJumpEnabled = 0x1D8,
-        BreakJointsOnDeath = 0x1DB,
-        RequiresNeck = 0x1E0,
-        UseJumpPower = 0x1E3,
-        RigType = 0x1C8,
-        Jump = 0x1DD,
-        FloorMaterial = 0x190
+        HipHeight = getOffset("Humanoid", "HipHeight"),
+        MaxSlopeAngle = getOffset("Humanoid", "MaxSlopeAngle"),
+        WalkSpeed = getOffset("Humanoid", "WalkSpeed") or getOffset("Humanoid", "Walkspeed"),
+        WalkSpeedCheck = getOffset("Humanoid", "WalkSpeedCheck") or getOffset("Humanoid", "WalkspeedCheck"),
+        JumpPower = getOffset("Humanoid", "JumpPower"),
+        JumpHeight = getOffset("Humanoid", "JumpHeight"),
+        MoveDirection = getOffset("Humanoid", "MoveDirection"),
+        WalkToPoint = getOffset("Humanoid", "WalkToPoint") or getOffset("Humanoid", "MoveToPoint"),
+        IsWalking = getOffset("Humanoid", "IsWalking"),
+        HealthDisplayDistance = getOffset("Humanoid", "HealthDisplayDistance"),
+        NameDisplayDistance = getOffset("Humanoid", "NameDisplayDistance"),
+        AutoRotate = getOffset("Humanoid", "AutoRotate"),
+        AutoJumpEnabled = getOffset("Humanoid", "AutoJumpEnabled"),
+        BreakJointsOnDeath = getOffset("Humanoid", "BreakJointsOnDeath"),
+        RequiresNeck = getOffset("Humanoid", "RequiresNeck"),
+        UseJumpPower = getOffset("Humanoid", "UseJumpPower"),
+        RigType = getOffset("Humanoid", "RigType"),
+        Jump = getOffset("Humanoid", "Jump"),
+        FloorMaterial = getOffset("Humanoid", "FloorMaterial")
     },
     
     GuiObject = {
-        Active = 0x5BC,
-        ClipsDescendants = 0x5BD,
-        Draggable = 0x5BE,
-        Selectable = 0x5C0,
-        Visible = 0x5B1,
-        BackgroundTransparency = 0x56C,
-        BackgroundColor3 = 0x548,
-        BorderColor3 = 0x554,
-        Rotation = 0x188,
-        LayoutOrder = 0x584,
-        ZIndex = 0x5A8,
-        BorderSizePixel = 0x574,
-        Position = 0x528,
-        Size = 0x538,
-        AnchorPoint = 0x560,
-        AbsolutePositionX = 0x2510,
-        AbsolutePositionY = 0x2514,
-        AbsoluteSizeX = 0x2518,
-        AbsoluteSizeY = 0x251C,
+        Active = getOffset("GuiObject", "Active"),
+        ClipsDescendants = getOffset("GuiObject", "ClipsDescendants"),
+        Draggable = getOffset("GuiObject", "Draggable"),
+        Selectable = getOffset("GuiObject", "Selectable"),
+        Visible = getOffset("GuiObject", "Visible"),
+        BackgroundTransparency = getOffset("GuiObject", "BackgroundTransparency"),
+        BackgroundColor3 = getOffset("GuiObject", "BackgroundColor3"),
+        BorderColor3 = getOffset("GuiObject", "BorderColor3"),
+        Rotation = getOffset("GuiObject", "Rotation"),
+        LayoutOrder = getOffset("GuiObject", "LayoutOrder"),
+        ZIndex = getOffset("GuiObject", "ZIndex"),
+        BorderSizePixel = getOffset("GuiObject", "BorderSizePixel"),
+        Position = getOffset("GuiObject", "Position"),
+        Size = getOffset("GuiObject", "Size"),
+        AnchorPoint = getOffset("GuiObject", "AnchorPoint"),
+        AbsolutePositionX = getOffset("GuiBase2D", "AbsolutePosition"),
+        AbsolutePositionY = getOffset("GuiBase2D", "AbsolutePosition"),
+        AbsoluteSizeX = getOffset("GuiBase2D", "AbsoluteSize"),
+        AbsoluteSizeY = getOffset("GuiBase2D", "AbsoluteSize")
     },
     
     TextLabel = {
-        Text = 0xAA8,
-        TextColor3 = 0xEB8,
-        TextSize = 0xCE4,
-        TextTransparency = 0xEEC,
-        TextStrokeColor3 = 0xEC4,
-        TextStrokeTransparency = 0xEE8,
-        LineHeight = 0xB1C
+        Text = getOffset("TextLabel", "Text"),
+        TextColor3 = getOffset("TextLabel", "TextColor3"),
+        TextSize = getOffset("TextLabel", "TextSize"),
+        TextTransparency = getOffset("TextLabel", "TextTransparency"),
+        TextStrokeColor3 = getOffset("TextLabel", "TextStrokeColor3"),
+        TextStrokeTransparency = getOffset("TextLabel", "TextStrokeTransparency"),
+        LineHeight = getOffset("TextLabel", "LineHeight")
     },
 
     TextButton = {
-        Text = 0xD28
+        Text = getOffset("TextButton", "Text")
     },
 
     TextBox = {
-        Text = 0xE00
+        Text = getOffset("TextBox", "Text")
     },
     
     Lighting = {
-        Ambient = 0xD8,
-        Brightness = 0x120,
-        ClockTime = 0x1B8,
-        ColorShift_Bottom = 0xE4,
-        ColorShift_Top = 0xF0,
-        ExposureCompensation = 0x12C,
-        FogColor = 0xFC,
-        FogEnd = 0x134,
-        FogStart = 0x138,
-        GeographicLatitude = 0x190,
-        OutdoorAmbient = 0x108
+        Ambient = getOffset("Lighting", "Ambient"),
+        Brightness = getOffset("Lighting", "Brightness"),
+        ClockTime = getOffset("Lighting", "ClockTime"),
+        ColorShift_Bottom = getOffset("Lighting", "ColorShift_Bottom"),
+        ColorShift_Top = getOffset("Lighting", "ColorShift_Top"),
+        ExposureCompensation = getOffset("Lighting", "ExposureCompensation"),
+        FogColor = getOffset("Lighting", "FogColor"),
+        FogEnd = getOffset("Lighting", "FogEnd"),
+        FogStart = getOffset("Lighting", "FogStart"),
+        GeographicLatitude = getOffset("Lighting", "GeographicLatitude"),
+        OutdoorAmbient = getOffset("Lighting", "OutdoorAmbient")
     },
     
     ProximityPrompt = {
-        ActionText = 0xD0,
-        ObjectText = 0xF0,
-        Enabled = 0x156,
-        HoldDuration = 0x140,
-        MaxActivationDistance = 0x148,
-        RequiresLineOfSight = 0x157,
-        KeyboardKeyCode = 0x144
+        ActionText = getOffset("ProximityPrompt", "ActionText"),
+        ObjectText = getOffset("ProximityPrompt", "ObjectText"),
+        Enabled = getOffset("ProximityPrompt", "Enabled"),
+        HoldDuration = getOffset("ProximityPrompt", "HoldDuration"),
+        MaxActivationDistance = getOffset("ProximityPrompt", "MaxActivationDistance"),
+        RequiresLineOfSight = getOffset("ProximityPrompt", "RequiresLineOfSight"),
+        KeyboardKeyCode = getOffset("ProximityPrompt", "KeyboardKeyCode") or getOffset("ProximityPrompt", "KeyCode")
     },
     
     Sky = {
-        MoonAngularSize = 0x25C,
-        SunAngularSize = 0x264,
-        StarCount = 0x260,
-        MoonTextureId = 0xE0,
-        SunTextureId = 0x230,
-        SkyboxBk = 0x110,
-        SkyboxDn = 0x140,
-        SkyboxFt = 0x170,
-        SkyboxLf = 0x1A0,
-        SkyboxRt = 0x1D0,
-        SkyboxUp = 0x200
+        MoonAngularSize = getOffset("Sky", "MoonAngularSize"),
+        SunAngularSize = getOffset("Sky", "SunAngularSize"),
+        StarCount = getOffset("Sky", "StarCount"),
+        MoonTextureId = getOffset("Sky", "MoonTextureId"),
+        SunTextureId = getOffset("Sky", "SunTextureId"),
+        SkyboxBk = getOffset("Sky", "SkyboxBk"),
+        SkyboxDn = getOffset("Sky", "SkyboxDn"),
+        SkyboxFt = getOffset("Sky", "SkyboxFt"),
+        SkyboxLf = getOffset("Sky", "SkyboxLf"),
+        SkyboxRt = getOffset("Sky", "SkyboxRt"),
+        SkyboxUp = getOffset("Sky", "SkyboxUp")
     },
     
     BloomEffect = {
-        Intensity = 0xD0,
-        Size = 0xD4,
-        Threshold = 0xD8
+        Intensity = getOffset("BloomEffect", "Intensity"),
+        Size = getOffset("BloomEffect", "Size"),
+        Threshold = getOffset("BloomEffect", "Threshold")
     },
     
     ColorCorrectionEffect = {
-        TintColor = 0xD0,
-        Brightness = 0xDC,
-        Contrast = 0xE0,
-        Saturation = 0xE4
+        TintColor = getOffset("ColorCorrectionEffect", "TintColor"),
+        Brightness = getOffset("ColorCorrectionEffect", "Brightness"),
+        Contrast = getOffset("ColorCorrectionEffect", "Contrast"),
+        Saturation = getOffset("ColorCorrectionEffect", "Saturation")
     },
     
     DepthOfFieldEffect = {
-        FocusDistance = 0xD4,
-        InFocusRadius = 0xD8,
-        NearIntensity = 0xDC
+        FocusDistance = getOffset("DepthOfFieldEffect", "FocusDistance"),
+        InFocusRadius = getOffset("DepthOfFieldEffect", "InFocusRadius"),
+        NearIntensity = getOffset("DepthOfFieldEffect", "NearIntensity"),
+        FarIntensity = getOffset("DepthOfFieldEffect", "FarIntensity")
     },
     
     Highlight = {
-        FillColor = 0xE0,
-        OutlineColor = 0xEC,
-        FillTransparency = 0xFC,
-        OutlineTransparency = 0xF0,
-        DepthMode = 0xF8
+        FillColor = getOffset("Highlight", "FillColor"),
+        OutlineColor = getOffset("Highlight", "OutlineColor"),
+        FillTransparency = getOffset("Highlight", "FillTransparency"),
+        OutlineTransparency = getOffset("Highlight", "OutlineTransparency"),
+        DepthMode = getOffset("Highlight", "DepthMode")
     },
     
     Tool = {
-        CanBeDropped = 0x4A0,
-        Enabled = 0x4A1,
-        ManualActivationOnly = 0x4A2,
-        RequiresHandle = 0x4A3,
-        ToolTip = 0x450,
-        GripPos = 0x494
+        CanBeDropped = getOffset("Tool", "CanBeDropped"),
+        Enabled = getOffset("Tool", "Enabled"),
+        ManualActivationOnly = getOffset("Tool", "ManualActivationOnly"),
+        RequiresHandle = getOffset("Tool", "RequiresHandle"),
+        ToolTip = getOffset("Tool", "ToolTip") or getOffset("Tool", "Tooltip"),
+        GripPos = getOffset("Tool", "GripPos")
     },
 
     Camera = {
-        FieldOfView = 0x160
+        FieldOfView = getOffset("Camera", "FieldOfView")
     },
 
     AnimationTrack = {
-        Animation = 0xD0,
-        Animator = 0x118,
-        IsPlaying = 0x518,
-        Looped = 0xF5,
-        Speed = 0xE4,
-        AnimationId = 0xD0
+        Animation = getOffset("AnimationTrack", "Animation"),
+        Animator = getOffset("AnimationTrack", "Animator"),
+        IsPlaying = getOffset("AnimationTrack", "IsPlaying"),
+        Looped = getOffset("AnimationTrack", "Looped"),
+        Speed = getOffset("AnimationTrack", "Speed"),
+        AnimationId = getOffset("Misc", "AnimationId")
     },
 
     Terrain = {
-        GrassLength = 0x1F8,
-        MaterialColors = 0x280,
-        WaterColor = 0x1E8,
-        WaterReflectance = 0x200,
-        WaterTransparency = 0x204,
-        WaterWaveSize = 0x208,
-        WaterWaveSpeed = 0x20C
+        GrassLength = getOffset("Terrain", "GrassLength"),
+        MaterialColors = getOffset("Terrain", "MaterialColors"),
+        WaterColor = getOffset("Terrain", "WaterColor"),
+        WaterReflectance = getOffset("Terrain", "WaterReflectance"),
+        WaterTransparency = getOffset("Terrain", "WaterTransparency"),
+        WaterWaveSize = getOffset("Terrain", "WaterWaveSize"),
+        WaterWaveSpeed = getOffset("Terrain", "WaterWaveSpeed")
     },
 
     MaterialColors = {
-        Asphalt = 0x10,
-        Basalt = 0xD,
-        Brick = 0x5,
-        Cobblestone = 0x11,
-        Concrete = 0x4,
-        CrackedLava = 0xF,
-        Glacier = 0x9,
-        Grass = 0x2,
-        Ground = 0xE,
-        Ice = 0x12,
-        LeafyGrass = 0x13,
-        Limestone = 0x15,
-        Mud = 0xC,
-        Pavement = 0x16,
-        Rock = 0x8,
-        Salt = 0x14,
-        Sand = 0x6,
-        Sandstone = 0xB,
-        Slate = 0x3,
-        Snow = 0xA,
-        WoodPlanks = 0x7
-    },
-
+        Asphalt = getOffset("MaterialColors", "Asphalt"),
+        Basalt = getOffset("MaterialColors", "Basalt"),
+        Brick = getOffset("MaterialColors", "Brick"),
+        Cobblestone = getOffset("MaterialColors", "Cobblestone"),
+        Concrete = getOffset("MaterialColors", "Concrete"),
+        CrackedLava = getOffset("MaterialColors", "CrackedLava"),
+        Glacier = getOffset("MaterialColors", "Glacier"),
+        Grass = getOffset("MaterialColors", "Grass"),
+        Ground = getOffset("MaterialColors", "Ground"),
+        Ice = getOffset("MaterialColors", "Ice"),
+        LeafyGrass = getOffset("MaterialColors", "LeafyGrass"),
+        Limestone = getOffset("MaterialColors", "Limestone"),
+        Mud = getOffset("MaterialColors", "Mud"),
+        Pavement = getOffset("MaterialColors", "Pavement"),
+        Rock = getOffset("MaterialColors", "Rock"),
+        Salt = getOffset("MaterialColors", "Salt"),
+        Sand = getOffset("MaterialColors", "Sand"),
+        Sandstone = getOffset("MaterialColors", "Sandstone"),
+        Slate = getOffset("MaterialColors", "Slate"),
+        Snow = getOffset("MaterialColors", "Snow"),
+        WoodPlanks = getOffset("MaterialColors", "WoodPlanks")
+    }
 }
-
-
 
 ---- variables ----
 local Camera = workspace.CurrentCamera
