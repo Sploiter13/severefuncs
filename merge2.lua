@@ -2042,27 +2042,53 @@ Instance.declare({
     }
 })
 
+-- ═══════════════════════════════════════════════════════════
+-- ANIMATOR METHODS
+-- ═══════════════════════════════════════════════════════════
+
 Instance.declare({
     class = "Animator",
     name = "GetPlayingAnimationTracks",
     callback = {
         method = function(self)
+            print("[DEBUG] GetPlayingAnimationTracks called")
+            print("[DEBUG] Animator offset:", Offsets.Animator.ActiveAnimations)
+            
             local Head = memory_readu64(self, Offsets.Animator.ActiveAnimations)
+            print("[DEBUG] Head pointer:", string.format("0x%X", Head))
+            
             if Head == 0 then
+                print("[DEBUG] Head is 0, returning empty table")
                 return {}
             end
             
             local Node = memory_readu64(Head)
+            print("[DEBUG] First node:", string.format("0x%X", Node))
+            
             local Result = {}
+            local count = 0
             
             while Node ~= 0 and Node ~= Head do
-                local Track = memory_readu64(Node + 0x10)
-                if Track ~= 0 then
-                    table.insert(Result, pointer_to_userdata(Track))
+                count = count + 1
+                if count > 100 then
+                    print("[DEBUG] Breaking: too many iterations")
+                    break
                 end
+                
+                local Track = memory_readu64(Node + 0x10)
+                print(string.format("[DEBUG] Node %d: Track at 0x%X", count, Track))
+                
+                if Track ~= 0 then
+                    local trackUserdata = pointer_to_userdata(Track)
+                    table.insert(Result, trackUserdata)
+                    print("[DEBUG] Added track:", trackUserdata)
+                end
+                
                 Node = memory_readu64(Node)
+                print(string.format("[DEBUG] Next node: 0x%X", Node))
             end
             
+            print("[DEBUG] Total tracks found:", #Result)
             return Result
         end
     }
