@@ -109,6 +109,7 @@ local Offsets = {
         JumpHeight = getOffset("Humanoid", "JumpHeight"),
         MoveDirection = getOffset("Humanoid", "MoveDirection"),
         WalkToPoint = getOffset("Humanoid", "WalkToPoint") or getOffset("Humanoid", "MoveToPoint"),
+		MoveToPart = getOffset("Humanoid", "MoveToPart"),
         IsWalking = getOffset("Humanoid", "IsWalking"),
         HealthDisplayDistance = getOffset("Humanoid", "HealthDisplayDistance"),
         NameDisplayDistance = getOffset("Humanoid", "NameDisplayDistance"),
@@ -969,6 +970,62 @@ Instance.declare({
     callback = {
         get = function(self)
             return memory_readi32(self, Offsets.Humanoid.FloorMaterial)
+        end
+    }
+})
+
+Instance.declare({
+    class = "Humanoid",
+    name = "MoveTo",
+    callback = {
+        method = function(self, target, waitForComplete)
+            waitForComplete = waitForComplete or false
+            local targetPosition
+            
+            if type(target) == "vector" or (type(target) == "table" and target.X and target.Y and target.Z) then
+                targetPosition = toVector(target)
+            elseif target and target.ClassName then
+                memory_writeu64(self, Offsets.Humanoid.MoveToPart, tonumber(target.Data))
+                
+                targetPosition = toVector(target.Position)
+            else
+                error("[Humanoid:MoveTo] Invalid target - must be Vector3 or Part")
+                return
+            end
+            
+            local character = self.Parent
+            if not character then
+                warn("[Humanoid:MoveTo] No parent character")
+                return
+            end
+            
+            local hrp = character:FindFirstChild("HumanoidRootPart")
+            if not hrp then
+                warn("[Humanoid:MoveTo] No HumanoidRootPart found")
+                return
+            end
+            
+            local moveLoop = function()
+                while true do
+                    local currentPos = hrp.Position
+                    
+                    if math.abs(currentPos.X - targetPosition.X) <= 1 and 
+                       math.abs(currentPos.Z - targetPosition.Z) <= 1 then
+                        break
+                    end
+
+                    memory_writevector(self, Offsets.Humanoid.WalkToPoint, targetPosition)
+                    memory_writeu8(self, Offsets.Humanoid.IsWalking, 1)
+                    
+                    task.wait(0.03)
+                end
+            end
+            
+            if waitForComplete then
+                moveLoop()
+            else
+                task.spawn(moveLoop)
+            end
         end
     }
 })
