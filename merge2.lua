@@ -981,8 +981,7 @@ Instance.declare({
         method = function(self, target, waitForComplete)
             waitForComplete = waitForComplete or false
             local targetPosition
-            
-            if type(target) == "vector" or (type(target) == "table" and target.X and target.Y and target.Z) then
+                        if type(target) == "vector" or (type(target) == "table" and target.X and target.Y and target.Z) then
                 targetPosition = toVector(target)
             elseif target and target.ClassName then
                 memory_writeu64(self, Offsets.Humanoid.MoveToPart, tonumber(target.Data))
@@ -1005,15 +1004,17 @@ Instance.declare({
                 return
             end
             
+            local finished = false
+            
             local moveLoop = function()
                 while true do
                     local currentPos = hrp.Position
                     
                     if math.abs(currentPos.X - targetPosition.X) <= 1 and 
                        math.abs(currentPos.Z - targetPosition.Z) <= 1 then
+                        finished = true
                         break
                     end
-
                     memory_writevector(self, Offsets.Humanoid.WalkToPoint, targetPosition)
                     memory_writeu8(self, Offsets.Humanoid.IsWalking, 1)
                     
@@ -1021,10 +1022,12 @@ Instance.declare({
                 end
             end
             
+            task.spawn(moveLoop)
+            
             if waitForComplete then
-                moveLoop()
-            else
-                task.spawn(moveLoop)
+                while not finished do
+                    task.wait(0.1)
+                end
             end
         end
     }
