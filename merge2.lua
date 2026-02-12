@@ -2055,38 +2055,36 @@ Instance.declare({
     name = "GetPlayingAnimationTracks",
     callback = {
         method = function(self)
-            if not Offsets.Animator or not Offsets.Animator.ActiveAnimations then
-                warn("[Animator] ActiveAnimations offset not found")
-                return {}
-            end
-            
-            local Head = memory_readu64(self, Offsets.Animator.ActiveAnimations)
+            local Head = memory.readu64(self, Offsets.Animator.ActiveAnimations)
             
             if Head == 0 then
                 return {}
             end
             
-            local Node = memory_readu64(Head)
+            local Node = memory.readu64(Head)
             local Result = {}
             local count = 0
             
             while Node ~= 0 and Node ~= Head and count < 100 do
                 count = count + 1
                 
-                local Track = memory_readu64(Node + 0x10)
+                local TrackPtr = memory.readu64(Node + 0x10)
                 
-                if Track ~= 0 then
-                    table.insert(Result, pointer_to_userdata(Track))
+                if TrackPtr ~= 0 then
+                    local animationPtr = memory.readu64(TrackPtr, Offsets.AnimationTrack.Animation)
+                    if animationPtr ~= 0 then
+                        local animId = memory.readstring(animationPtr, Offsets.AnimationTrack.AnimationId)
+                        table.insert(Result, animId)
+                    end
                 end
                 
-                Node = memory_readu64(Node)
+                Node = memory.readu64(Node)
             end
             
             return Result
         end
     }
 })
-
 -- ═══════════════════════════════════════════════════════════
 -- TERRAIN PROPERTIES
 -- ═══════════════════════════════════════════════════════════
