@@ -42,7 +42,7 @@ local TEXT_CLASSES = {"TextLabel", "TextButton", "TextBox"}
 local response1 = game:HttpGet("https://dumper.jonah.cool/offsets.json")
 assert(response1, "Failed to fetch offsets from dumper.jonah.cool")
 local JonahOffsets = crypt.json.decode(response1)
-
+task.wait(1)
 local response2 = game:HttpGet("https://imtheo.lol/Offsets/Offsets.json")
 assert(response2, "Failed to fetch offsets from imtheo.lol")
 local TheoOffsets = crypt.json.decode(response2)
@@ -284,6 +284,7 @@ local Offsets = {
         WoodPlanks = getOffset("MaterialColors", "WoodPlanks")
     }
 }
+task.wait(1)
 
 ---- variables ----
 local Camera = workspace.CurrentCamera
