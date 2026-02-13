@@ -2098,7 +2098,22 @@ Instance.declare({
                     local animationPtr = memory.readu64(TrackPtr, Offsets.AnimationTrack.Animation)
                     if animationPtr ~= 0 then
                         local animId = memory.readstring(animationPtr, Offsets.AnimationTrack.AnimationId)
-                        table.insert(Result, animId)
+                        
+                        local track = setmetatable({
+                            AnimationId = animId,
+                            IsPlaying = memory.readu8(TrackPtr, Offsets.AnimationTrack.IsPlaying) ~= 0,
+                            Speed = memory.readf32(TrackPtr, Offsets.AnimationTrack.Speed),
+                            Looped = memory.readu8(TrackPtr, Offsets.AnimationTrack.Looped) ~= 0,
+                            Animation = {
+                                AnimationId = animId
+                            }
+                        }, {
+                            __tostring = function(t)
+                                return t.AnimationId
+                            end
+                        })
+                        
+                        table.insert(Result, track)
                     end
                 end
                 
