@@ -54,8 +54,8 @@ end
 
 -- Get offset from sources (prefer Jonah, fallback to Theo)
 local function getOffset(class, field)
-    local s1 = JonahOffsets.offsets
-    local s2 = TheoOffsets.Offsets
+    local _, s1 = pcall(function() return JonahOffsets.offsets end)
+    local _, s2 = pcall(function() return TheoOffsets.Offsets end)
     
     local value = (s1 and s1[class] and s1[class][field]) or (s2 and s2[class] and s2[class][field])
     return hex(value)
