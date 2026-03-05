@@ -38,27 +38,64 @@ local GUI_CLASSES = {"Frame", "TextLabel", "TextButton", "TextBox", "ImageLabel"
 local TEXT_CLASSES = {"TextLabel", "TextButton", "TextBox"}
 
 ---- offsets ----
--- Fetch offsets from both sources
-local response1 = game:HttpGet("https://dumper.jonah.cool/offsets.json")
-assert(response1, "Failed to fetch offsets from dumper.jonah.cool")
-local JonahOffsets = crypt.json.decode(response1)
-task.wait(1)
-local response2 = game:HttpGet("https://imtheo.lol/Offsets/Offsets.json")
-assert(response2, "Failed to fetch offsets from imtheo.lol")
-local TheoOffsets = crypt.json.decode(response2)
-
--- Convert decimal to hex
-local function hex(dec)
-    return dec and tonumber(dec) and string.format("0x%X", dec) or nil
+local function fetch_json(urls: {string})
+    local last_err = "unknown"
+    for i = 1, #urls do
+        local ok, body = pcall(function()
+            return game:HttpGet(urls[i])
+        end)
+        if not ok or not body or #body == 0 then
+            last_err = "httpget_failed"
+        else
+            local ok_decode, data = pcall(function()
+                return crypt.json.decode(body)
+            end)
+            if ok_decode and data then
+                return data, nil
+            end
+            last_err = "decode_failed"
+        end
+    end
+    return nil, last_err
 end
 
--- Get offset from sources (prefer Jonah, fallback to Theo)
+local JonahOffsets, JonahErr = fetch_json({
+    "https://dumper.jonah.cool/offsets.json",
+})
+assert(JonahOffsets, "Failed to fetch offsets from jonah (" .. tostring(JonahErr) .. ")")
+
+task.wait(1)
+
+local TheoOffsets, TheoErr = fetch_json({
+    "https://imtheo.lol/Offsets/Offsets.json",
+})
+assert(TheoOffsets, "Failed to fetch offsets from imtheo (" .. tostring(TheoErr) .. ")")
+
+local function hex(dec)
+    if not dec then
+        return nil
+    end
+    local n = tonumber(dec)
+    if not n or n == 0 then
+        return nil
+    end
+    return string.format("0x%X", n)
+end
+
 local function getOffset(class, field)
-    local _, s1 = pcall(function() return JonahOffsets.offsets end)
-    local _, s2 = pcall(function() return TheoOffsets.Offsets end)
-    
-    local value = (s1 and s1[class] and s1[class][field]) or (s2 and s2[class] and s2[class][field])
-    return hex(value)
+    local _, s1 = pcall(function()
+        return JonahOffsets.offsets or JonahOffsets.Offsets or JonahOffsets.data or JonahOffsets.Data
+    end)
+    local _, s2 = pcall(function()
+        return TheoOffsets.Offsets or TheoOffsets.offsets or TheoOffsets.data or TheoOffsets.Data
+    end)
+    local v1 = s1 and s1[class] and s1[class][field]
+    local h1 = hex(v1)
+    if h1 then
+        return h1
+    end
+    local v2 = s2 and s2[class] and s2[class][field]
+    return hex(v2)
 end
 
 -- Build the table
