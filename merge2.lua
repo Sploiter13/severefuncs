@@ -64,7 +64,7 @@ local JonahOffsets, JonahErr = fetch_json({
 })
 assert(JonahOffsets, "Failed to fetch offsets from jonah (" .. tostring(JonahErr) .. ")")
 
-task.wait(1)
+task.wait(0.3)
 
 local TheoOffsets, TheoErr = fetch_json({
     "https://imtheo.lol/Offsets/Offsets.json",
@@ -342,7 +342,7 @@ local Offsets = {
         WoodPlanks = getOffset("MaterialColors", "WoodPlanks")
     }
 }
-task.wait(1)
+task.wait(0.4)
 
 ---- variables ----
 local Camera = workspace.CurrentCamera
