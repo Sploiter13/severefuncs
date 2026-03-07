@@ -1750,6 +1750,7 @@ for _, faceName in ipairs(skyboxFaces) do
                 return memory_readstring(self, Offsets.Sky[faceName])
             end,
             set = function(self, value)
+				invalidate()
                 local address = self.Data + Offsets.Sky[faceName]
                 local pointer = memory.readu64(address)
                 local buf = buffer.create(#value + 1)
