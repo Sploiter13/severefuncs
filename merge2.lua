@@ -438,6 +438,13 @@ local function readUDim2(ptr, offset)
     return xScale, xOffset, yScale, yOffset
 end
 
+local function writeUDim2(ptr, offset, xScale, xOffset, yScale, yOffset)
+    memory_writef32(ptr, offset,       xScale)
+    memory_writei32(ptr, offset + 0x4, xOffset)
+    memory_writef32(ptr, offset + 0x8, yScale)
+    memory_writei32(ptr, offset + 0xC, yOffset)
+end
+
 local function readVector2(ptr, offset)
     local x = memory_readf32(ptr, offset)
     local y = memory_readf32(ptr, offset + 4)
@@ -1250,6 +1257,10 @@ Instance.declare({
             if not self.Data or self.Data == 0 then return newUDim2(0, 0, 0, 0) end
             local sx, ox, sy, oy = readUDim2(self.Data, Offsets.GuiObject.Position)
             return newUDim2(sx, ox, sy, oy)
+        end,
+        set = function(self, value)
+            if not self.Data or self.Data == 0 then return end
+            writeUDim2(self.Data, Offsets.GuiObject.Position, value.X.Scale, value.X.Offset, value.Y.Scale, value.Y.Offset)
         end
     }
 })
@@ -1263,6 +1274,10 @@ Instance.declare({
             if not self.Data or self.Data == 0 then return newUDim2(0, 0, 0, 0) end
             local sx, ox, sy, oy = readUDim2(self.Data, Offsets.GuiObject.Size)
             return newUDim2(sx, ox, sy, oy)
+        end,
+        set = function(self, value)
+            if not self.Data or self.Data == 0 then return end
+            writeUDim2(self.Data, Offsets.GuiObject.Size, value.X.Scale, value.X.Offset, value.Y.Scale, value.Y.Offset)
         end
     }
 })
