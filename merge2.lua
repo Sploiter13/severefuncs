@@ -336,7 +336,15 @@ local function getPrimitive(part)
     assert(part and part.Data and part.Data ~= 0, "Invalid part data")
     return memory_readu64(part, Offsets.BasePart.Primitive)
 end
-
+--[[
+local function writestr(offset, val)
+    local address = skyaddr + offset
+    local pointer = memory.readu64(address)
+    local buf = buffer.create(#val + 1)
+    buffer.writestring(buf, 0, val)
+    memory.writebuffer(pointer, buf)
+end
+]]
 local function toVector(value)
     if type(value) == "vector" then
         return value
@@ -1703,7 +1711,11 @@ for _, faceName in ipairs(skyboxFaces) do
                 return memory_readstring(self, Offsets.Sky[faceName])
             end,
             set = function(self, value)
-                memory_writestring(self, Offsets.Sky[faceName], value)
+                local address = self.Data + Offsets.Sky[faceName]
+                local pointer = memory.readu64(address)
+                local buf = buffer.create(#value + 1)
+                buffer.writestring(buf, 0, value)
+                memory.writebuffer(pointer, buf)
             end
         }
     })
