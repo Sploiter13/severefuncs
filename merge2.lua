@@ -292,6 +292,22 @@ local Offsets = {
     ActiveAnimations = getOffset("Animator", "ActiveAnimations")
 	},
 
+	TaskScheduler = {
+    Pointer = getOffset("TaskScheduler", "Pointer"),
+    JobStart = getOffset("TaskScheduler", "JobStart"),
+    JobEnd = getOffset("TaskScheduler", "JobEnd"),
+    JobName = getOffset("TaskScheduler", "JobName"),
+	},
+
+	RenderJob = {
+   	 	RenderView = getOffset("RenderJob", "RenderView"),
+	},
+
+	RenderView = {
+    	LightingValid = getOffset("RenderView", "LightingValid"),
+    	SkyValid = getOffset("RenderView", "SkyValid"),
+	},
+
     Terrain = {
         GrassLength = getOffset("Terrain", "GrassLength"),
         MaterialColors = getOffset("Terrain", "MaterialColors"),
@@ -345,6 +361,29 @@ local function writestr(offset, val)
     memory.writebuffer(pointer, buf)
 end
 ]]
+
+local function getrenderview()
+    local scheduler = memory.readu64(memory.base + tonumber(Offsets.TaskScheduler.Pointer))
+    local jobstart = memory.readu64(scheduler + tonumber(Offsets.TaskScheduler.JobStart))
+    local jobend = memory.readu64(scheduler + tonumber(Offsets.TaskScheduler.JobEnd))
+    for job = jobstart, jobend - 1, 0x10 do
+        local jobaddr = memory.readu64(job)
+        if jobaddr ~= 0 then
+            local name = memory.readstring(jobaddr + tonumber(Offsets.TaskScheduler.JobName))
+            if name and name:find("RenderJob") and not name:find("Pre") then
+                return memory.readu64(jobaddr + tonumber(Offsets.RenderJob.RenderView))
+            end
+        end
+    end
+end
+
+local function invalidate()
+    local renderview = getrenderview()
+    if not renderview then return end
+    memory.writebool(renderview + tonumber(Offsets.RenderView.LightingValid), false)
+    memory.writebool(renderview + tonumber(Offsets.RenderView.SkyValid), false)
+end
+
 local function toVector(value)
     if type(value) == "vector" then
         return value
@@ -1716,6 +1755,7 @@ for _, faceName in ipairs(skyboxFaces) do
                 local buf = buffer.create(#value + 1)
                 buffer.writestring(buf, 0, value)
                 memory.writebuffer(pointer, buf)
+                invalidate()
             end
         }
     })
