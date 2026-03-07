@@ -1588,6 +1588,26 @@ Instance.declare({
     }
 })
 
+
+------
+
+Instance.declare({
+    class = "ParticleEmitter",
+    name  = "Color",
+    callback = {
+        get = function(self)
+            local b = memory.readu64(memory.readu64(self.Data + 0xD0) + 0xB0)
+            return Color3.new(
+                memory.readf32(b+4),
+                memory.readf32(b+8),
+                memory.readf32(b+12)
+            )
+        end,
+    }
+})
+
+
+
 -- ═══════════════════════════════════════════════════════════
 -- PROXIMITY PROMPT PROPERTIES
 -- ═══════════════════════════════════════════════════════════
