@@ -98,6 +98,7 @@ local function getOffset(class, field)
     return hex(v2)
 end
 
+task.wait(1)
 -- Build the table
 local Offsets = {
     Atmosphere = {
@@ -342,7 +343,7 @@ local Offsets = {
         WoodPlanks = getOffset("MaterialColors", "WoodPlanks")
     }
 }
-task.wait(0.4)
+task.wait(0.8)
 
 ---- variables ----
 local Camera = workspace.CurrentCamera
@@ -4943,4 +4944,5 @@ Instance.declare({
 })
 print("done")
 print"1"
+task.wait(1)
 return TweenService
