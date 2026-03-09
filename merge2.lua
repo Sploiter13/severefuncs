@@ -67,7 +67,7 @@ assert(JonahOffsets, "Failed to fetch offsets from jonah (" .. tostring(JonahErr
 task.wait(0.3)
 
 local TheoOffsets, TheoErr = fetch_json({
-    "https://imtheo.lol/Offsets/Offsets.json",
+    "https://raw.githubusercontent.com/Sploiter13/imth/refs/heads/main/Offsets.json",
 })
 assert(TheoOffsets, "Failed to fetch offsets from imtheo (" .. tostring(TheoErr) .. ")")
 
