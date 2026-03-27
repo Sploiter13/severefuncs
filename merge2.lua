@@ -1320,8 +1320,8 @@ Instance.declare({
     callback = {
         get = function(self)
             if not self.Data or self.Data == 0 then return newVector2(0, 0) end
-            local x = memory_readf32(self.Data, Offsets.GuiObject.AbsolutePositionX)
-            local y = memory_readf32(self.Data, Offsets.GuiObject.AbsolutePositionY)
+            local x = memory_readf32(self.Data, Offsets.GuiObject.AbsolutePositionX + 0x4)
+            local y = memory_readf32(self.Data, Offsets.GuiObject.AbsolutePositionY + 0x8)
             return newVector2(x, y)
         end
     }
