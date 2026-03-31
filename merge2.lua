@@ -3211,7 +3211,7 @@ RobloxSignal = {}
 RobloxSignal.__index = RobloxSignal
 
 function RobloxSignal.new()
-    return setmetatable({_signal = Signal.new()}, RobloxSignal)
+   -- return setmetatable({_signal = Signal.new()}, RobloxSignal)
 end
 
 function RobloxSignal:Connect(callback)
