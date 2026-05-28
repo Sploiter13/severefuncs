@@ -1,10 +1,6 @@
 --!strict
 --!optimize 2
 
--- ════════════════════════════════════════════════════════════════════
--- Severe property/method extension layer  (performance rewrite)
--- Offsets hardcoded from: roblox-dumper 2.6 — version-460909c4fe904aae
--- ════════════════════════════════════════════════════════════════════
 
 -- ───────────── memory aliases ─────────────
 local memory_readu8     = memory.readu8
