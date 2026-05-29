@@ -1,6 +1,760 @@
 --!strict
 --!optimize 2
+local Offsets: any = (function()
+-- Dumped With: roblox-dumper 2.9
+-- Created by: Jonah (jonahw on Discord)
+-- Github: https://github.com/nopjo/roblox-dumper
+-- Roblox Version: version-460909c4fe904aae
+-- Time Taken: 5715 ms (5.715000 seconds)
+-- Total Offsets: 495
 
+local offsets = {
+
+    ROBLOX_VERSION = "version-460909c4fe904aae",
+
+    AirProperties = {
+        AirDensity = 0x18,
+        GlobalWind = 0x3C,
+    },
+
+    Animation = {
+        AnimationId = 0xD0,
+    },
+
+    AnimationTrack = {
+        Animation = 0xD0,
+        Animator = 0x118,
+        IsPlaying = 0xF4,
+        Looped = 0xF5,
+        Speed = 0xE4,
+        TimePosition = 0xE8,
+    },
+
+    Animator = {
+        ActiveAnimations = 0x868,
+    },
+
+    Atmosphere = {
+        Color = 0xD0,
+        Decay = 0xDC,
+        Density = 0xE8,
+        Glare = 0xEC,
+        Haze = 0xF0,
+        Offset = 0xF4,
+    },
+
+    Attachment = {
+        CFrame = 0xDC,
+        Visible = 0xF4,
+    },
+
+    BasePart = {
+        CastShadow = 0xF5,
+        Color3 = 0x194,
+        Locked = 0xF6,
+        Massless = 0xF7,
+        Primitive = 0x148,
+        Reflectance = 0xEC,
+        Shape = 0x1B1,
+        Transparency = 0xF0,
+    },
+
+    Beam = {
+        Attachment0 = 0x170,
+        Attachment1 = 0x180,
+        Brightness = 0x190,
+        Color = 0x124,
+        ColorSequence = 0x110,
+        CurveSize0 = 0x194,
+        CurveSize1 = 0x198,
+        Enabled = 0x1C4,
+        FaceCamera = 0x1C5,
+        LightEmission = 0x19C,
+        LightInfluence = 0x1A0,
+        Segments = 0x1A8,
+        TextureLength = 0x1AC,
+        TextureMode = 0x1B0,
+        TextureSpeed = 0x1B4,
+        Transparency = 0xE4,
+        TransparencySequence = 0xD0,
+        Width0 = 0x1B8,
+        Width1 = 0x1BC,
+        ZOffset = 0x1C0,
+    },
+
+    BillboardGui = {
+        Active = 0x7CC,
+        Adornee = 0x70,
+        AlwaysOnTop = 0x7CD,
+        Brightness = 0x7B0,
+        ClipsDescendants = 0x7CE,
+        ExtentsOffset = 0x778,
+        ExtentsOffsetWorldSpace = 0x784,
+        LightInfluence = 0x7C4,
+        MaxDistance = 0x7C8,
+        Size = 0x768,
+        SizeOffset = 0x7A8,
+        StudsOffset = 0x790,
+        StudsOffsetWorldSpace = 0x79C,
+    },
+
+    BloomEffect = {
+        Enabled = 0xD,
+        Intensity = 0xD0,
+        Size = 0xD4,
+        Threshold = 0xD8,
+    },
+
+    BlurEffect = {
+        Enabled = 0xD,
+        Size = 0xD0,
+    },
+
+    ByteCode = {
+        Pointer = 0x10,
+        Size = 0xD0,
+    },
+
+    Camera = {
+        CFrame = 0xF8,
+        CameraType = 0x158,
+        FieldOfView = 0x160,
+        Position = 0x11C,
+        Rotation = 0xF8,
+        ViewportInt16 = 0x2AC,
+        ViewportSize = 0x2E8,
+    },
+
+    CharacterMesh = {
+        BaseTextureId = 0xE0,
+        BodyPart = 0x160,
+        MeshId = 0x110,
+        OverlayTextureId = 0x140,
+    },
+
+    ClickDetector = {
+        MaxActivationDistance = 0x100,
+    },
+
+    Clothing = {
+        Color3 = 0x128,
+        Template = 0x108,
+    },
+
+    ColorCorrectionEffect = {
+        Brightness = 0xDC,
+        Contrast = 0xE0,
+        Enabled = 0xD,
+        TintColor = 0xD0,
+    },
+
+    ColorGradingEffect = {
+        Enabled = 0xD,
+        TonemapperPreset = 0x30,
+    },
+
+    DataModel = {
+        CreatorId = 0x190,
+        GameId = 0x198,
+        GameLoaded = 0x638,
+        JobId = 0x138,
+        PlaceId = 0x1A0,
+        ServerIP = 0x620,
+        Workspace = 0x178,
+    },
+
+    DepthOfFieldEffect = {
+        Enabled = 0xD,
+        FarIntensity = 0xD0,
+        FocusDistance = 0xD4,
+        InFocusRadius = 0xD8,
+        NearIntensity = 0xDC,
+    },
+
+    FakeDataModel = {
+        Pointer = 0x74F6758,
+        RealDataModel = 0x1D0,
+    },
+
+    GuiBase2D = {
+        AbsolutePosition = 0x110,
+        AbsoluteRotation = 0x188,
+        AbsoluteSize = 0x118,
+    },
+
+    GuiObject = {
+        Active = 0x5B0,
+        AnchorPoint = 0x560,
+        AutomaticSize = 0x568,
+        BackgroundColor3 = 0x548,
+        BackgroundTransparency = 0x56C,
+        BorderColor3 = 0x554,
+        BorderMode = 0x570,
+        BorderSizePixel = 0x574,
+        ClipsDescendants = 0x5B1,
+        GuiState = 0x580,
+        Interactable = 0x5B3,
+        LayoutOrder = 0x588,
+        Position = 0x518,
+        Rotation = 0x188,
+        Selectable = 0x5B4,
+        SelectionOrder = 0x5A4,
+        Size = 0x538,
+        SizeConstraint = 0x5A8,
+        Visible = 0x5B5,
+        ZIndex = 0x5AC,
+    },
+
+    Highlight = {
+        DepthMode = 0xF8,
+        Enabled = 0x10C,
+        FillColor = 0xE0,
+        FillTransparency = 0xFC,
+        OutlineColor = 0xEC,
+        OutlineTransparency = 0x104,
+    },
+
+    Humanoid = {
+        AutoJumpEnabled = 0x1E0,
+        AutoRotate = 0x1E1,
+        AutomaticScalingEnabled = 0x1E2,
+        BreakJointsOnDeath = 0x1E3,
+        CameraOffset = 0x140,
+        DisplayDistanceType = 0x18C,
+        DisplayName = 0xD0,
+        EvaluateStateMachine = 0x1E4,
+        FloorMaterial = 0x190,
+        Health = 0x194,
+        HealthDisplayDistance = 0x198,
+        HealthDisplayType = 0x19C,
+        HipHeight = 0x1A0,
+        HumanoidRootPart = 0x488,
+        HumanoidState = 0x8A8,
+        HumanoidStateID = 0x20,
+        IsWalking = 0x927,
+        Jump = 0x1E6,
+        JumpHeight = 0x1AC,
+        JumpPower = 0x1B0,
+        MaxHealth = 0x1B4,
+        MaxSlopeAngle = 0x1B8,
+        MoveDirection = 0x158,
+        MoveToPart = 0x130,
+        MoveToPoint = 0x17C,
+        NameDisplayDistance = 0x1BC,
+        NameOcclusion = 0x1C0,
+        PlatformStand = 0x1E8,
+        RequiresNeck = 0x1E9,
+        RigType = 0x1CC,
+        SeatPart = 0x120,
+        Sit = 0x1EA,
+        TargetPoint = 0x164,
+        UseJumpPower = 0x1EC,
+        WalkSpeed = 0x1DC,
+        WalkSpeedCheck = 0x3C4,
+        WalkTimer = 0x418,
+        WalkToPoint = 0x17C,
+        Walkspeed = 0x1DC,
+        WalkspeedCheck = 0x3C4,
+    },
+
+    ImageButton = {
+        HoverImage = 0xC98,
+        Image = 0xCC8,
+        ImageColor3 = 0xD38,
+        PressedImage = 0xCF8,
+    },
+
+    ImageLabel = {
+        Image = 0xA18,
+        ImageColor3 = 0xA58,
+        ImageTransparency = 0xA7C,
+        ScaleType = 0xA84,
+    },
+
+    InputObject = {
+        MousePosition = 0xEC,
+    },
+
+    Instance = {
+        AttributeContainer = 0x48,
+        AttributeList = 0x18,
+        AttributeToNext = 0x58,
+        AttributeToValue = 0x18,
+        ChildrenEnd = 0x8,
+        ChildrenStart = 0x78,
+        ClassDescriptor = 0x18,
+        ClassName = 0x8,
+        Name = 0xB0,
+        Parent = 0x70,
+        This = 0x8,
+    },
+
+    Light = {
+        Brightness = 0xE4,
+        Color = 0xD8,
+        Enabled = 0xE8,
+        Shadows = 0xE9,
+    },
+
+    Lighting = {
+        Ambient = 0xE0,
+        Atmosphere = 0x1F0,
+        Brightness = 0x128,
+        ClockTime = 0x1C0,
+        ColorShift_Bottom = 0xEC,
+        ColorShift_Top = 0xF8,
+        EnvironmentDiffuseScale = 0x12C,
+        EnvironmentSpecularScale = 0x130,
+        ExposureCompensation = 0x134,
+        FogColor = 0x104,
+        FogEnd = 0x13C,
+        FogStart = 0x140,
+        OutdoorAmbient = 0x110,
+        ShadowSoftness = 0x148,
+        Sky = 0x1E0,
+    },
+
+    LightingParameters = {
+        GeographicLatitude = 0x198,
+        LightColor = 0x164,
+        LightDirection = 0x170,
+        SkyAmbient = 0x158,
+        SkyAmbient2 = 0x19C,
+        Source = 0x17C,
+        TrueMoonPosition = 0x18C,
+        TrueSunPosition = 0x180,
+    },
+
+    LocalScript = {
+        ByteCode = 0x1A8,
+        Bytecode = 0x1A8,
+        GUID = 0x1B8,
+        Hash = 0x1B8,
+    },
+
+    MaterialColors = {
+        Asphalt = 0x30,
+        Basalt = 0x27,
+        Brick = 0xF,
+        Cobblestone = 0x33,
+        Concrete = 0xC,
+        CrackedLava = 0x2D,
+        Glacier = 0x1B,
+        Grass = 0x6,
+        Ground = 0x2A,
+        Ice = 0x36,
+        LeafyGrass = 0x39,
+        Limestone = 0x3F,
+        Mud = 0x24,
+        Pavement = 0x42,
+        Rock = 0x18,
+        Salt = 0x3C,
+        Sand = 0x12,
+        Sandstone = 0x21,
+        Slate = 0x9,
+        Snow = 0x1E,
+        WoodPlanks = 0x15,
+    },
+
+    MeshPart = {
+        MeshId = 0x2F8,
+        Texture = 0x328,
+        TextureId = 0x328,
+    },
+
+    Misc = {
+        Adornee = 0x70,
+        AnimationId = 0xD0,
+        StringLength = 0x10,
+        Value = 0xD0,
+    },
+
+    Model = {
+        PrimaryPart = 0x278,
+        WorldPivot = 0x120,
+    },
+
+    ModuleScript = {
+        ByteCode = 0xD0,
+        Bytecode = 0xD0,
+        GUID = 0x160,
+        Hash = 0x160,
+    },
+
+    MouseService = {
+        InputObject = 0x118,
+    },
+
+    ParticleEmitter = {
+        Acceleration = 0x1F0,
+        Brightness = 0x22C,
+        Color = 0x1A4,
+        ColorSequence = 0x190,
+        Drag = 0x230,
+        EmissionDirection = 0x234,
+        Enabled = 0x278,
+        Lifetime = 0x204,
+        LightEmission = 0x248,
+        LightInfluence = 0x24C,
+        Rate = 0x258,
+        RotSpeed = 0x20C,
+        Rotation = 0x214,
+        Size = 0xE4,
+        SizeSequence = 0xD0,
+        Speed = 0x21C,
+        SpreadAngle = 0x224,
+        TimeScale = 0x26C,
+        Transparency = 0x164,
+        TransparencySequence = 0x150,
+        VelocityInheritance = 0x270,
+        ZOffset = 0x274,
+    },
+
+    Player = {
+        AccountAge = 0x32C,
+        CameraMode = 0x30,
+        Character = 0x3A8,
+        DisplayName = 0x130,
+        HealthDisplayDistance = 0x358,
+        LocalPlayer = 0x138,
+        LocaleId = 0x700,
+        MaxZoomDistance = 0x330,
+        MinZoomDistance = 0x334,
+        ModelInstance = 0x3A8,
+        NameDisplayDistance = 0x368,
+        Team = 0x2B0,
+        TeamColor = 0x374,
+        UserId = 0x2D8,
+    },
+
+    Players = {
+        LocalPlayer = 0x138,
+    },
+
+    PointLight = {
+        Range = 0xF0,
+    },
+
+    Primitive = {
+        AssemblyAngularVelocity = 0x104,
+        AssemblyLinearVelocity = 0xF8,
+        CFrame = 0xC8,
+        Flags = 0x1B6,
+        Material = 0x236,
+        Orientation = 0xC8,
+        Position = 0xEC,
+        PrimitiveFlags = 0x1B6,
+        Rotation = 0xC8,
+        Size = 0x1B8,
+    },
+
+    PrimitiveFlags = {
+        Anchored = 0x2,
+        CanCollide = 0x8,
+        CanQuery = 0x20,
+        CanTouch = 0x10,
+    },
+
+    ProximityPrompt = {
+        ActionText = 0xC8,
+        Enabled = 0x14E,
+        HoldDuration = 0x138,
+        KeyCode = 0x13C,
+        KeyboardKeyCode = 0x13C,
+        MaxActivationDistance = 0x140,
+        ObjectText = 0xE8,
+        RequiresLineOfSight = 0x14F,
+    },
+
+    RenderView = {
+        LightingValid = 0x150,
+        SkyValid = 0x28D,
+        SkyboxValid = 0x28D,
+    },
+
+    ScreenGui = {
+        ClipToDeviceSafeArea = 0x750,
+        DisplayOrder = 0xE0,
+        Enabled = 0x4C8,
+        IgnoreGuiInset = 0x4C8,
+        ResetOnSpawn = 0x4CD,
+        SafeAreaCompatibility = 0x4C8,
+        ScreenInsets = 0x74C,
+        ZIndexBehavior = 0x4C8,
+    },
+
+    ScrollingFrame = {
+        CanvasPosition = 0x600,
+        CanvasSize = 0xA18,
+        ScrollBarThickness = 0xA78,
+        ScrollingDirection = 0xA80,
+    },
+
+    Seat = {
+        Occupant = 0x220,
+    },
+
+    Sky = {
+        MoonAngularSize = 0x25C,
+        MoonTextureId = 0xE0,
+        SkyboxBk = 0x110,
+        SkyboxDn = 0x140,
+        SkyboxFt = 0x170,
+        SkyboxLf = 0x1A0,
+        SkyboxOrientation = 0x250,
+        SkyboxRt = 0x1D0,
+        SkyboxUp = 0x200,
+        StarCount = 0x260,
+        SunAngularSize = 0x264,
+        SunTextureId = 0x230,
+    },
+
+    Sound = {
+        Looped = 0x155,
+        PlayOnRemove = 0x156,
+        PlaybackRegionsEnabled = 0x157,
+        PlaybackSpeed = 0x134,
+        RollOffMaxDistance = 0x138,
+        RollOffMinDistance = 0x13C,
+        RollOffMode = 0x140,
+        SoundId = 0xE0,
+        Volume = 0x148,
+    },
+
+    SpawnLocation = {
+        AllowTeamChangeOnTouch = 0x45,
+        Duration = 0x1F0,
+        Enabled = 0x1F9,
+        ForcefieldDuration = 0x1F0,
+        Neutral = 0x1FA,
+        TeamColor = 0x1F4,
+    },
+
+    SpecialMesh = {
+        MeshId = 0x108,
+        Offset = 0xD0,
+        Scale = 0xDC,
+        TextureId = 0x130,
+    },
+
+    SpotLight = {
+        Angle = 0xF0,
+        Face = 0xF4,
+        Range = 0xF8,
+    },
+
+    SunRaysEffect = {
+        Intensity = 0xD0,
+        Spread = 0xD4,
+    },
+
+    SurfaceAppearance = {
+        AlphaMode = 0x2A0,
+        Color = 0x288,
+        EmissiveStrength = 0x2A4,
+        ResampleMode = 0x2A8,
+    },
+
+    SurfaceGui = {
+        PixelsPerStud = 0x784,
+        SizingMode = 0x788,
+        ToolPunchThroughDistance = 0x798,
+        ZOffset = 0xE4,
+    },
+
+    SurfaceLight = {
+        Angle = 0xF0,
+        Face = 0xF4,
+        Range = 0xF8,
+    },
+
+    TaskScheduler = {
+        JobEnd = 0xD0,
+        JobName = 0x18,
+        JobStart = 0xC8,
+        Pointer = 0x7BFE988,
+    },
+
+    Team = {
+        BrickColor = 0xD0,
+        TeamColor = 0xD0,
+    },
+
+    Terrain = {
+        GrassLength = 0x1F8,
+        MaterialColors = 0x2A8,
+        WaterColor = 0x1E8,
+        WaterReflectance = 0x200,
+        WaterTransparency = 0x204,
+        WaterWaveSize = 0x208,
+        WaterWaveSpeed = 0x20C,
+    },
+
+    TextBox = {
+        ClearTextOnFocus = 0xED0,
+        Font = 0xE98,
+        LineHeight = 0xC50,
+        MaxVisibleGraphemes = 0xEA4,
+        MultiLine = 0xED3,
+        PlaceholderColor3 = 0xE70,
+        PlaceholderText = 0xE00,
+        RichText = 0xD46,
+        ShowNativeInput = 0xED9,
+        Text = 0xB58,
+        TextColor3 = 0xE7C,
+        TextDirection = 0xCF0,
+        TextEditable = 0xEDA,
+        TextScaled = 0xD42,
+        TextSize = 0xEB8,
+        TextStrokeColor3 = 0xE88,
+        TextStrokeTransparency = 0xEBC,
+        TextTransparency = 0xEC0,
+        TextTruncate = 0xEC4,
+        TextWrapped = 0xD44,
+        TextXAlignment = 0xEC8,
+        TextYAlignment = 0xC98,
+    },
+
+    TextButton = {
+        AutoButtonColor = 0x9CC,
+        ContentText = 0xDE0,
+        Font = 0x10F0,
+        LineHeight = 0xED8,
+        LocalizedText = 0xDE0,
+        MaxVisibleGraphemes = 0x10FC,
+        Modal = 0x9CD,
+        RichText = 0xFD2,
+        Selected = 0x9CE,
+        Text = 0xDE0,
+        TextColor3 = 0x10D8,
+        TextDirection = 0xF78,
+        TextScaled = 0xDC9,
+        TextSize = 0x1104,
+        TextStrokeColor3 = 0x10E4,
+        TextStrokeTransparency = 0x1108,
+        TextTransparency = 0x110C,
+        TextTruncate = 0x1110,
+        TextWrapped = 0xFCC,
+        TextXAlignment = 0x1114,
+        TextYAlignment = 0xF20,
+    },
+
+    TextLabel = {
+        ContentText = 0xB60,
+        Font = 0xE70,
+        LineHeight = 0xC58,
+        LocalizedText = 0xB60,
+        MaxVisibleGraphemes = 0xE7C,
+        RichText = 0xD52,
+        Text = 0xB60,
+        TextColor3 = 0xE58,
+        TextDirection = 0xCF8,
+        TextScaled = 0xD4A,
+        TextSize = 0xE84,
+        TextStrokeColor3 = 0xE64,
+        TextStrokeTransparency = 0xE88,
+        TextTransparency = 0xE8C,
+        TextTruncate = 0xE90,
+        TextWrapped = 0xD4C,
+        TextXAlignment = 0xE94,
+        TextYAlignment = 0xCA0,
+    },
+
+    Tool = {
+        CanBeDropped = 0x4C8,
+        Enabled = 0x4C9,
+        Grip = 0x498,
+        GripForward = 0x4B0,
+        GripPos = 0x4BC,
+        GripRight = 0x498,
+        GripUp = 0x4A4,
+        ManualActivationOnly = 0x4CA,
+        RequiresHandle = 0x4CB,
+        Tooltip = 0x478,
+    },
+
+    UIGradient = {
+        Color = 0x134,
+        ColorSequence = 0x120,
+        Enabled = 0x164,
+        Offset = 0x158,
+        Rotation = 0x160,
+        Transparency = 0xF4,
+        TransparencySequence = 0xE0,
+    },
+
+    Value = {
+        Value = 0xD0,
+    },
+
+    VehicleSeat = {
+        MaxSpeed = 0x238,
+        Occupant = 0x218,
+        SteerFloat = 0x240,
+        ThrottleFloat = 0x248,
+        Torque = 0x24C,
+        TurnSpeed = 0x250,
+    },
+
+    VisualEngine = {
+        Dimensions = 0xAA0,
+        FakeDataModel = 0xA80,
+        Pointer = 0x7BD51F8,
+        RenderView = 0xB80,
+        ViewMatrix = 0x140,
+    },
+
+    WeldConstraint = {
+        Enabled = 0xF0,
+        Part0 = 0x70,
+        Part1 = 0xE0,
+    },
+
+    Workspace = {
+        CurrentCamera = 0x4B0,
+        FallenPartsDestroyHeight = 0x208,
+        ReadOnlyGravity = 0x9E0,
+        World = 0x408,
+    },
+
+    World = {
+        AirProperties = 0x218,
+        FallenPartsDestroyHeight = 0x208,
+        Gravity = 0x210,
+        Primitives = 0x280,
+        WorldSteps = 0x678,
+        worldStepsPerSec = 0x678,
+    },
+
+}
+
+return offsets
+-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ PASTE offsets.lua ABOVE ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+end)()
+
+-- ───────────── offset resolver (validates at load) ─────────────
+local function O(ns: string, field: string): number
+	local namespace = Offsets[ns]
+	if namespace == nil then
+		error(`[offsets] missing namespace '{ns}' — re-paste offsets.lua`)
+	end
+	local value = namespace[field]
+	if type(value) ~= "number" then
+		error(`[offsets] missing offset '{ns}.{field}' — re-paste offsets.lua`)
+	end
+	return value
+end
+
+-- namespace defaults to the class name when it's a single string
+local function nsFor(class: any, ns: string?): string
+	if ns ~= nil then
+		return ns
+	end
+	if type(class) == "string" then
+		return class
+	end
+	error("[offsets] explicit namespace required for multi-class declarations")
+end
 
 -- ───────────── memory aliases ─────────────
 local memory_readu8     = memory.readu8
@@ -34,16 +788,21 @@ local math_asin  = math.asin
 local math_atan2 = math.atan2
 local math_abs   = math.abs
 local math_clamp = math.clamp
-local math_max   = math.max
 local math_min   = math.min
+local math_max   = math.max
 local math_rad   = math.rad
 local math_deg   = math.deg
 local math_pi    = math.pi
 
-local os_clock    = os.clock
-local task_spawn  = task.spawn
-local task_wait   = task.wait
-local task_cancel = task.cancel
+local os_clock = os.clock
+
+local coroutine_create  = coroutine.create
+local coroutine_resume  = coroutine.resume
+local coroutine_running = coroutine.running
+local coroutine_yield   = coroutine.yield
+
+-- RunService drives the per-frame tween loop (no task library)
+local RunService = game:GetService("RunService")
 
 local Color3_new = Color3.new
 local declare    = Instance.declare
@@ -54,25 +813,26 @@ local GUI_CLASSES = table.freeze({
 	"Frame", "TextLabel", "TextButton", "TextBox",
 	"ImageLabel", "ImageButton", "ScrollingFrame",
 })
+local TEXT_CLASSES = table.freeze({ "TextLabel", "TextButton", "TextBox" })
 
--- ───────────── structural offsets ─────────────
-local OFF_PRIMITIVE  = 0x148 -- BasePart -> Primitive pointer
-local OFF_PRIM_FLAGS = 0x1B6 -- Primitive flags byte
-local FLAG_ANCHORED  = 0x2
-local FLAG_CANTOUCH  = 0x10
-local FLAG_CANQUERY  = 0x20
-local OFF_TERRAIN_MATCOLORS = 0x2A8
+-- ───────────── structural offsets (resolved once) ─────────────
+local OFF_PRIMITIVE  = O("BasePart", "Primitive")
+local OFF_PRIM_FLAGS = O("Primitive", "Flags")
+local OFF_MATCOLORS  = O("Terrain", "MaterialColors")
+
+local VE_POINTER    = O("VisualEngine", "Pointer")
+local VE_RENDERVIEW = O("VisualEngine", "RenderView")
+local RV_LIGHTING   = O("RenderView", "LightingValid")
+local RV_SKY        = O("RenderView", "SkyValid")
 
 -- ════════════════════════════════════════════════════════════════════
--- conversion helpers  (kept as helpers: complex + reused in many setters)
+-- conversion helpers (complex + reused in many setters)
 -- ════════════════════════════════════════════════════════════════════
-
 local function toVector(value: any): vector
 	if type(value) == "vector" then
 		return value
 	end
-	local t = typeof(value)
-	if t == "Vector3" or (type(value) == "table" and value.X ~= nil) then
+	if typeof(value) == "Vector3" or (type(value) == "table" and value.X ~= nil) then
 		return vector_create(value.X, value.Y, value.Z)
 	end
 	error("toVector: expected vector or Vector3")
@@ -103,7 +863,6 @@ local function toColorVector(value: any): vector
 	error("toColorVector: cannot convert value to color")
 end
 
--- round each component to 3 decimals (pure SIMD vector math)
 local ROUND_HALF = vector_create(0.5, 0.5, 0.5)
 
 @native
@@ -111,7 +870,7 @@ local function round3(v: vector): vector
 	return vector_floor(v * 1000 + ROUND_HALF) * 0.001
 end
 
--- ───────────── UDim2 / Vector2 memory layout (reused by GUI props) ─────────────
+-- ───────────── UDim2 layout (reused by GUI Position/Size) ─────────────
 local function readUDim2(self: any, offset: number): (number, number, number, number)
 	return memory_readf32(self, offset),
 		memory_readi32(self, offset + 0x4),
@@ -126,10 +885,9 @@ local function writeUDim2(self: any, offset: number, sx: number, ox: number, sy:
 	memory_writei32(self, offset + 0xC, oy)
 end
 
--- ───────────── terrain material colors (reused: 21 props + 2 methods) ─────────────
--- offsets.h MaterialColors.* are already byte offsets into the color buffer.
+-- ───────────── terrain material colors (byte offsets into the buffer) ─────────────
 local function readMaterialColor(self: any, byteOffset: number): Color3
-	local ptr = memory_readu64(self, OFF_TERRAIN_MATCOLORS)
+	local ptr = memory_readu64(self, OFF_MATCOLORS)
 	return Color3_new(
 		memory_readu8(ptr, byteOffset) / 255,
 		memory_readu8(ptr, byteOffset + 1) / 255,
@@ -138,7 +896,7 @@ local function readMaterialColor(self: any, byteOffset: number): Color3
 end
 
 local function writeMaterialColor(self: any, byteOffset: number, color: any)
-	local ptr = memory_readu64(self, OFF_TERRAIN_MATCOLORS)
+	local ptr = memory_readu64(self, OFF_MATCOLORS)
 	local c = toColorVector(color)
 	memory_writeu8(ptr, byteOffset, math_floor(c.X * 255 + 0.5))
 	memory_writeu8(ptr, byteOffset + 1, math_floor(c.Y * 255 + 0.5))
@@ -147,11 +905,11 @@ end
 
 -- ───────────── render view (VisualEngine chain) ─────────────
 local function getRenderView(): number
-	local visualEngine = memory_readu64(memory_base + 0x7FED100) -- VisualEngine.Pointer
-	if visualEngine == 0 then
+	local ve = memory_readu64(memory_base + VE_POINTER)
+	if ve == 0 then
 		return 0
 	end
-	return memory_readu64(visualEngine + 0xBB0) -- VisualEngine.RenderView
+	return memory_readu64(ve + VE_RENDERVIEW)
 end
 
 local function invalidateRender()
@@ -159,18 +917,17 @@ local function invalidateRender()
 	if rv == 0 then
 		return
 	end
-	memory_writeu8(rv + 0x170, 0) -- RenderView.LightingValid
-	memory_writeu8(rv + 0x28D, 0) -- RenderView.SkyValid
+	memory_writeu8(rv + RV_LIGHTING, 0)
+	memory_writeu8(rv + RV_SKY, 0)
 end
 
 -- ════════════════════════════════════════════════════════════════════
--- declaration factories
--- These run ONCE at load and produce closures that call memory.* directly,
--- so runtime cost is identical to hand-written get/set (the offset is an
--- immutable upvalue captured by value). They remove ~1500 lines of repetition.
+-- declaration factories — run once at load; the resolved offset becomes
+-- an immutable upvalue, so the get/set closures cost the same as
+-- hand-written memory.* calls. ns defaults to class, field defaults to name.
 -- ════════════════════════════════════════════════════════════════════
-
-local function declareF32(class: any, name: string, offset: number)
+local function declareF32(class: any, name: string, ns: string?, field: string?)
+	local offset = O(nsFor(class, ns), field or name)
 	declare({ class = class, name = name, callback = {
 		get = function(self: any): number
 			return memory_readf32(self, offset)
@@ -181,7 +938,8 @@ local function declareF32(class: any, name: string, offset: number)
 	} })
 end
 
-local function declareI32(class: any, name: string, offset: number)
+local function declareI32(class: any, name: string, ns: string?, field: string?)
+	local offset = O(nsFor(class, ns), field or name)
 	declare({ class = class, name = name, callback = {
 		get = function(self: any): number
 			return memory_readi32(self, offset)
@@ -192,7 +950,20 @@ local function declareI32(class: any, name: string, offset: number)
 	} })
 end
 
-local function declareBool(class: any, name: string, offset: number)
+local function declareU8(class: any, name: string, ns: string?, field: string?)
+	local offset = O(nsFor(class, ns), field or name)
+	declare({ class = class, name = name, callback = {
+		get = function(self: any): number
+			return memory_readu8(self, offset)
+		end,
+		set = function(self: any, value: number)
+			memory_writeu8(self, offset, value)
+		end,
+	} })
+end
+
+local function declareBool(class: any, name: string, ns: string?, field: string?)
+	local offset = O(nsFor(class, ns), field or name)
 	declare({ class = class, name = name, callback = {
 		get = function(self: any): boolean
 			return memory_readu8(self, offset) ~= 0
@@ -203,7 +974,8 @@ local function declareBool(class: any, name: string, offset: number)
 	} })
 end
 
-local function declareString(class: any, name: string, offset: number)
+local function declareString(class: any, name: string, ns: string?, field: string?)
+	local offset = O(nsFor(class, ns), field or name)
 	declare({ class = class, name = name, callback = {
 		get = function(self: any): string
 			return memory_readstring(self, offset)
@@ -214,8 +986,8 @@ local function declareString(class: any, name: string, offset: number)
 	} })
 end
 
--- color stored as a 3-float vector, exposed as Color3
-local function declareColor(class: any, name: string, offset: number)
+local function declareColor(class: any, name: string, ns: string?, field: string?)
+	local offset = O(nsFor(class, ns), field or name)
 	declare({ class = class, name = name, callback = {
 		get = function(self: any): Color3
 			local r = memory_readvector(self, offset)
@@ -227,8 +999,8 @@ local function declareColor(class: any, name: string, offset: number)
 	} })
 end
 
--- raw Vector3 (velocity / position style)
-local function declareVector(class: any, name: string, offset: number)
+local function declareVector(class: any, name: string, ns: string?, field: string?)
+	local offset = O(nsFor(class, ns), field or name)
 	declare({ class = class, name = name, callback = {
 		get = function(self: any): vector
 			return memory_readvector(self, offset)
@@ -239,62 +1011,7 @@ local function declareVector(class: any, name: string, offset: number)
 	} })
 end
 
--- ───────────── ParticleEmitter ─────────────
-declareColor("ParticleEmitter", "Color", 0x1A4)
-
--- ───────────── Atmosphere ─────────────
-declareColor("Atmosphere", "Color", 0xD0)
-declareF32("Atmosphere", "Decay", 0xDC)
-declareF32("Atmosphere", "Density", 0xE8)
-declareF32("Atmosphere", "Glare", 0xEC)
-declareF32("Atmosphere", "Haze", 0xF0)
-declareF32("Atmosphere", "Offset", 0xF4)
-
--- ───────────── BasePart (direct) ─────────────
-declareF32(BASEPART_CLASSES, "Reflectance", 0xEC)
-declareColor(BASEPART_CLASSES, "Color", 0x194)
-declareBool(BASEPART_CLASSES, "CastShadow", 0xF5)
-declareBool(BASEPART_CLASSES, "Locked", 0xF6)
-declareBool(BASEPART_CLASSES, "Massless", 0xF7)
-
-declare({ class = BASEPART_CLASSES, name = "Shape", callback = {
-	get = function(self: any): number
-		return memory_readu8(self, 0x1B1)
-	end,
-	set = function(self: any, value: number)
-		memory_writeu8(self, 0x1B1, value)
-	end,
-} })
-
--- ───────────── BasePart (through Primitive) ─────────────
-declare({ class = BASEPART_CLASSES, name = "AssemblyLinearVelocity", callback = {
-	get = function(self: any): vector
-		return round3(memory_readvector(memory_readu64(self, OFF_PRIMITIVE), 0xF8))
-	end,
-	set = function(self: any, value: any)
-		memory_writevector(memory_readu64(self, OFF_PRIMITIVE), 0xF8, toVector(value))
-	end,
-} })
-
-declare({ class = BASEPART_CLASSES, name = "AssemblyAngularVelocity", callback = {
-	get = function(self: any): vector
-		return round3(memory_readvector(memory_readu64(self, OFF_PRIMITIVE), 0x104))
-	end,
-	set = function(self: any, value: any)
-		memory_writevector(memory_readu64(self, OFF_PRIMITIVE), 0x104, toVector(value))
-	end,
-} })
-
-declare({ class = BASEPART_CLASSES, name = "Material", callback = {
-	get = function(self: any): number
-		return memory_readi32(memory_readu64(self, OFF_PRIMITIVE), 0x236)
-	end,
-	set = function(self: any, value: number)
-		memory_writei32(memory_readu64(self, OFF_PRIMITIVE), 0x236, value)
-	end,
-} })
-
--- Anchored / CanQuery / CanTouch are bits in the Primitive flags byte (0x1B6).
+-- Anchored / CanQuery / CanTouch are bits in the Primitive flags byte.
 local function declarePrimitiveFlag(name: string, mask: number)
 	declare({ class = BASEPART_CLASSES, name = name, callback = {
 		get = function(self: any): boolean
@@ -310,185 +1027,243 @@ local function declarePrimitiveFlag(name: string, mask: number)
 	} })
 end
 
-declarePrimitiveFlag("Anchored", FLAG_ANCHORED)
-declarePrimitiveFlag("CanQuery", FLAG_CANQUERY)
-declarePrimitiveFlag("CanTouch", FLAG_CANTOUCH)
+-- ───────────── ParticleEmitter ─────────────
+declareColor("ParticleEmitter", "Color")
+
+-- ───────────── Atmosphere ─────────────
+declareColor("Atmosphere", "Color")
+declareF32("Atmosphere", "Decay")
+declareF32("Atmosphere", "Density")
+declareF32("Atmosphere", "Glare")
+declareF32("Atmosphere", "Haze")
+declareF32("Atmosphere", "Offset")
+
+-- ───────────── BasePart (direct) ─────────────
+declareF32(BASEPART_CLASSES, "Reflectance", "BasePart")
+declareColor(BASEPART_CLASSES, "Color", "BasePart", "Color3")
+declareBool(BASEPART_CLASSES, "CastShadow", "BasePart")
+declareBool(BASEPART_CLASSES, "Locked", "BasePart")
+declareBool(BASEPART_CLASSES, "Massless", "BasePart")
+declareU8(BASEPART_CLASSES, "Shape", "BasePart")
+
+-- ───────────── BasePart (through Primitive) ─────────────
+do
+	local velLinear = O("Primitive", "AssemblyLinearVelocity")
+	local velAngular = O("Primitive", "AssemblyAngularVelocity")
+	local material = O("Primitive", "Material")
+
+	declare({ class = BASEPART_CLASSES, name = "AssemblyLinearVelocity", callback = {
+		get = function(self: any): vector
+			return round3(memory_readvector(memory_readu64(self, OFF_PRIMITIVE), velLinear))
+		end,
+		set = function(self: any, value: any)
+			memory_writevector(memory_readu64(self, OFF_PRIMITIVE), velLinear, toVector(value))
+		end,
+	} })
+
+	declare({ class = BASEPART_CLASSES, name = "AssemblyAngularVelocity", callback = {
+		get = function(self: any): vector
+			return round3(memory_readvector(memory_readu64(self, OFF_PRIMITIVE), velAngular))
+		end,
+		set = function(self: any, value: any)
+			memory_writevector(memory_readu64(self, OFF_PRIMITIVE), velAngular, toVector(value))
+		end,
+	} })
+
+	declare({ class = BASEPART_CLASSES, name = "Material", callback = {
+		get = function(self: any): number
+			return memory_readi32(memory_readu64(self, OFF_PRIMITIVE), material)
+		end,
+		set = function(self: any, value: number)
+			memory_writei32(memory_readu64(self, OFF_PRIMITIVE), material, value)
+		end,
+	} })
+end
+
+declarePrimitiveFlag("Anchored", O("PrimitiveFlags", "Anchored"))
+declarePrimitiveFlag("CanQuery", O("PrimitiveFlags", "CanQuery"))
+declarePrimitiveFlag("CanTouch", O("PrimitiveFlags", "CanTouch"))
 
 -- ───────────── Humanoid ─────────────
-declareF32("Humanoid", "HipHeight", 0x1A0)
-declareF32("Humanoid", "MaxSlopeAngle", 0x1B8)
-declareF32("Humanoid", "JumpPower", 0x1B0)
-declareF32("Humanoid", "JumpHeight", 0x1AC)
-declareF32("Humanoid", "HealthDisplayDistance", 0x198)
-declareF32("Humanoid", "NameDisplayDistance", 0x1BC)
-declareBool("Humanoid", "AutoRotate", 0x1E1)
-declareBool("Humanoid", "AutoJumpEnabled", 0x1E0)
-declareBool("Humanoid", "BreakJointsOnDeath", 0x1E3)
-declareBool("Humanoid", "RequiresNeck", 0x1E9)
-declareBool("Humanoid", "UseJumpPower", 0x1EC)
-declareBool("Humanoid", "Jump", 0x1E6)
-declareI32("Humanoid", "RigType", 0x1CC)
+declareF32("Humanoid", "HipHeight")
+declareF32("Humanoid", "MaxSlopeAngle")
+declareF32("Humanoid", "JumpPower")
+declareF32("Humanoid", "JumpHeight")
+declareF32("Humanoid", "HealthDisplayDistance")
+declareF32("Humanoid", "NameDisplayDistance")
+declareBool("Humanoid", "AutoRotate")
+declareBool("Humanoid", "AutoJumpEnabled")
+declareBool("Humanoid", "BreakJointsOnDeath")
+declareBool("Humanoid", "RequiresNeck")
+declareBool("Humanoid", "UseJumpPower")
+declareBool("Humanoid", "Jump")
+declareI32("Humanoid", "RigType")
 
--- WalkSpeed also writes the anti-cheat shadow copy (WalkSpeedCheck @ 0x2A8)
-declare({ class = "Humanoid", name = "WalkSpeed", callback = {
-	get = function(self: any): number
-		return memory_readf32(self, 0x1DC)
-	end,
-	set = function(self: any, value: number)
-		memory_writef32(self, 0x2A8, value)
-		memory_writef32(self, 0x1DC, value)
-	end,
-} })
+do
+	local walkSpeed = O("Humanoid", "WalkSpeed")
+	local walkSpeedCheck = O("Humanoid", "WalkSpeedCheck")
+	declare({ class = "Humanoid", name = "WalkSpeed", callback = {
+		get = function(self: any): number
+			return memory_readf32(self, walkSpeed)
+		end,
+		set = function(self: any, value: number)
+			memory_writef32(self, walkSpeedCheck, value)
+			memory_writef32(self, walkSpeed, value)
+		end,
+	} })
 
-declare({ class = "Humanoid", name = "MoveDirection", callback = {
-	get = function(self: any): vector
-		return round3(memory_readvector(self, 0x158))
-	end,
-	set = function(self: any, value: any)
-		memory_writevector(self, 0x158, toVector(value))
-	end,
-} })
+	local moveDir = O("Humanoid", "MoveDirection")
+	declare({ class = "Humanoid", name = "MoveDirection", callback = {
+		get = function(self: any): vector
+			return round3(memory_readvector(self, moveDir))
+		end,
+		set = function(self: any, value: any)
+			memory_writevector(self, moveDir, toVector(value))
+		end,
+	} })
 
-declare({ class = "Humanoid", name = "IsWalking", callback = {
-	get = function(self: any): boolean
-		return memory_readu8(self, 0x91F) ~= 0
-	end,
-} })
+	local isWalking = O("Humanoid", "IsWalking")
+	declare({ class = "Humanoid", name = "IsWalking", callback = {
+		get = function(self: any): boolean
+			return memory_readu8(self, isWalking) ~= 0
+		end,
+	} })
 
-declare({ class = "Humanoid", name = "FloorMaterial", callback = {
-	get = function(self: any): number
-		return memory_readi32(self, 0x190)
-	end,
-} })
+	local floorMaterial = O("Humanoid", "FloorMaterial")
+	declare({ class = "Humanoid", name = "FloorMaterial", callback = {
+		get = function(self: any): number
+			return memory_readi32(self, floorMaterial)
+		end,
+	} })
 
-declare({ class = "Humanoid", name = "MoveTo", callback = {
-	method = function(self: any, target: any)
-		local pos: vector
-		if type(target) == "vector" or (type(target) == "table" and target.X ~= nil) then
-			pos = toVector(target)
-		elseif target ~= nil and target.ClassName ~= nil then
-			memory_writeu64(self, 0x130, tonumber(target.Data)) -- MoveToPart
-			pos = toVector(target.Position)
-		else
-			error("[Humanoid:MoveTo] target must be a Vector3 or a Part")
-		end
-		memory_writevector(self, 0x17C, pos) -- WalkToPoint
-	end,
-} })
+	local moveToPart = O("Humanoid", "MoveToPart")
+	local walkToPoint = O("Humanoid", "WalkToPoint")
+	declare({ class = "Humanoid", name = "MoveTo", callback = {
+		method = function(self: any, target: any)
+			local pos: vector
+			if type(target) == "vector" or (type(target) == "table" and target.X ~= nil) then
+				pos = toVector(target)
+			elseif target ~= nil and target.ClassName ~= nil then
+				memory_writeu64(self, moveToPart, tonumber(target.Data))
+				pos = toVector(target.Position)
+			else
+				error("[Humanoid:MoveTo] target must be a Vector3 or a Part")
+			end
+			memory_writevector(self, walkToPoint, pos)
+		end,
+	} })
+end
 
 -- ───────────── GuiObject ─────────────
-declareBool(GUI_CLASSES, "Active", 0x5B8)
-declareBool(GUI_CLASSES, "ClipsDescendants", 0x5B9)
-declareBool(GUI_CLASSES, "Selectable", 0x5BC)
-declareBool(GUI_CLASSES, "Visible", 0x5BD)
-declareF32(GUI_CLASSES, "BackgroundTransparency", 0xD0)
-declareColor(GUI_CLASSES, "BackgroundColor3", 0x550)
-declareColor(GUI_CLASSES, "BorderColor3", 0x55C)
-declareF32(GUI_CLASSES, "Rotation", 0xD0)
-declareI32(GUI_CLASSES, "LayoutOrder", 0x590)
-declareI32(GUI_CLASSES, "ZIndex", 0x5B4)
-declareI32(GUI_CLASSES, "BorderSizePixel", 0x57C)
+declareBool(GUI_CLASSES, "Active", "GuiObject")
+declareBool(GUI_CLASSES, "ClipsDescendants", "GuiObject")
+declareBool(GUI_CLASSES, "Selectable", "GuiObject")
+declareBool(GUI_CLASSES, "Visible", "GuiObject")
+declareF32(GUI_CLASSES, "BackgroundTransparency", "GuiObject")
+declareColor(GUI_CLASSES, "BackgroundColor3", "GuiObject")
+declareColor(GUI_CLASSES, "BorderColor3", "GuiObject")
+declareF32(GUI_CLASSES, "Rotation", "GuiObject")
+declareI32(GUI_CLASSES, "LayoutOrder", "GuiObject")
+declareI32(GUI_CLASSES, "ZIndex", "GuiObject")
+declareI32(GUI_CLASSES, "BorderSizePixel", "GuiObject")
 
-declare({ class = GUI_CLASSES, name = "Position", callback = {
-	get = function(self: any)
-		local sx, ox, sy, oy = readUDim2(self, 0x520)
-		return { X = { Scale = sx, Offset = ox }, Y = { Scale = sy, Offset = oy } }
-	end,
-	set = function(self: any, value: any)
-		writeUDim2(self, 0x520, value.X.Scale, value.X.Offset, value.Y.Scale, value.Y.Offset)
-	end,
-} })
+do
+	local posOff = O("GuiObject", "Position")
+	declare({ class = GUI_CLASSES, name = "Position", callback = {
+		get = function(self: any)
+			local sx, ox, sy, oy = readUDim2(self, posOff)
+			return { X = { Scale = sx, Offset = ox }, Y = { Scale = sy, Offset = oy } }
+		end,
+		set = function(self: any, value: any)
+			writeUDim2(self, posOff, value.X.Scale, value.X.Offset, value.Y.Scale, value.Y.Offset)
+		end,
+	} })
 
-declare({ class = GUI_CLASSES, name = "Size", callback = {
-	get = function(self: any)
-		local sx, ox, sy, oy = readUDim2(self, 0x540)
-		return { X = { Scale = sx, Offset = ox }, Y = { Scale = sy, Offset = oy } }
-	end,
-	set = function(self: any, value: any)
-		writeUDim2(self, 0x540, value.X.Scale, value.X.Offset, value.Y.Scale, value.Y.Offset)
-	end,
-} })
+	local sizeOff = O("GuiObject", "Size")
+	declare({ class = GUI_CLASSES, name = "Size", callback = {
+		get = function(self: any)
+			local sx, ox, sy, oy = readUDim2(self, sizeOff)
+			return { X = { Scale = sx, Offset = ox }, Y = { Scale = sy, Offset = oy } }
+		end,
+		set = function(self: any, value: any)
+			writeUDim2(self, sizeOff, value.X.Scale, value.X.Offset, value.Y.Scale, value.Y.Offset)
+		end,
+	} })
 
-declare({ class = GUI_CLASSES, name = "AnchorPoint", callback = {
-	get = function(self: any)
-		return { X = memory_readf32(self, 0x568), Y = memory_readf32(self, 0x56C) }
-	end,
-} })
+	local anchorOff = O("GuiObject", "AnchorPoint")
+	declare({ class = GUI_CLASSES, name = "AnchorPoint", callback = {
+		get = function(self: any)
+			return { X = memory_readf32(self, anchorOff), Y = memory_readf32(self, anchorOff + 0x4) }
+		end,
+	} })
 
--- GuiBase2D AbsolutePosition / AbsoluteSize (read-only)
-declare({ class = GUI_CLASSES, name = "AbsolutePosition", callback = {
-	get = function(self: any)
-		return { X = memory_readf32(self, 0xD0), Y = memory_readf32(self, 0xD4) }
-	end,
-} })
+	local absPos = O("GuiBase2D", "AbsolutePosition")
+	declare({ class = GUI_CLASSES, name = "AbsolutePosition", callback = {
+		get = function(self: any)
+			return { X = memory_readf32(self, absPos), Y = memory_readf32(self, absPos + 0x4) }
+		end,
+	} })
 
-declare({ class = GUI_CLASSES, name = "AbsoluteSize", callback = {
-	get = function(self: any)
-		return { X = memory_readf32(self, 0xD0), Y = memory_readf32(self, 0xD4) }
-	end,
-} })
+	local absSize = O("GuiBase2D", "AbsoluteSize")
+	declare({ class = GUI_CLASSES, name = "AbsoluteSize", callback = {
+		get = function(self: any)
+			return { X = memory_readf32(self, absSize), Y = memory_readf32(self, absSize + 0x4) }
+		end,
+	} })
+end
 
--- ───────────── Text classes (per-class offsets) ─────────────
-local TEXT_CONFIG = {
-	{ class = "TextLabel", text = 0xB68, color = 0xE60, stroke = 0xE6C },
-	{ class = "TextButton", text = 0xDE8, color = 0x10E0, stroke = 0x10EC },
-	{ class = "TextBox", text = 0xB60, color = 0xE84, stroke = 0xE90 },
-}
-
-for _, cfg in TEXT_CONFIG do
-	declareString(cfg.class, "Text", cfg.text)
-	declareColor(cfg.class, "TextColor3", cfg.color)
-	declareColor(cfg.class, "TextStrokeColor3", cfg.stroke)
-	declareF32(cfg.class, "TextSize", 0xD0)
-	declareF32(cfg.class, "TextTransparency", 0xD0)
-	declareF32(cfg.class, "TextStrokeTransparency", 0xD0)
-	declareF32(cfg.class, "LineHeight", 0xD0)
+-- ───────────── Text classes (each class resolves its own offsets) ─────────────
+for _, cls in TEXT_CLASSES do
+	declareString(cls, "Text")
+	declareColor(cls, "TextColor3")
+	declareColor(cls, "TextStrokeColor3")
+	declareF32(cls, "TextSize")
+	declareF32(cls, "TextTransparency")
+	declareF32(cls, "TextStrokeTransparency")
+	declareF32(cls, "LineHeight")
 end
 
 -- ───────────── Lighting ─────────────
-declareColor("Lighting", "Ambient", 0xE0)
-declareF32("Lighting", "Brightness", 0x128)
-declareColor("Lighting", "ColorShift_Bottom", 0xEC)
-declareColor("Lighting", "ColorShift_Top", 0xF8)
-declareF32("Lighting", "ExposureCompensation", 0x134)
-declareColor("Lighting", "FogColor", 0x104)
-declareF32("Lighting", "FogEnd", 0x13C)
-declareF32("Lighting", "FogStart", 0x140)
-declareColor("Lighting", "OutdoorAmbient", 0x110)
+declareColor("Lighting", "Ambient")
+declareF32("Lighting", "Brightness")
+declareColor("Lighting", "ColorShift_Bottom")
+declareColor("Lighting", "ColorShift_Top")
+declareF32("Lighting", "ExposureCompensation")
+declareColor("Lighting", "FogColor")
+declareF32("Lighting", "FogEnd")
+declareF32("Lighting", "FogStart")
+declareColor("Lighting", "OutdoorAmbient")
 
-declare({ class = "Lighting", name = "ClockTime", callback = {
-	get = function(self: any): number
-		return memory_readf64(self, 0x1C0) / 3600
-	end,
-	set = function(self: any, value: number)
-		memory_writef64(self, 0x1C0, value * 3600)
-	end,
-} })
+do
+	local clockOff = O("Lighting", "ClockTime")
+	declare({ class = "Lighting", name = "ClockTime", callback = {
+		get = function(self: any): number
+			return memory_readf64(self, clockOff) / 3600
+		end,
+		set = function(self: any, value: number)
+			memory_writef64(self, clockOff, value * 3600)
+		end,
+	} })
+end
 
 -- ───────────── ProximityPrompt ─────────────
-declareString("ProximityPrompt", "ActionText", 0xC8)
-declareString("ProximityPrompt", "ObjectText", 0xE8)
-declareBool("ProximityPrompt", "Enabled", 0x14E)
-declareF32("ProximityPrompt", "HoldDuration", 0x138)
-declareF32("ProximityPrompt", "MaxActivationDistance", 0x140)
-declareBool("ProximityPrompt", "RequiresLineOfSight", 0x14F)
-declareI32("ProximityPrompt", "KeyboardKeyCode", 0x13C)
+declareString("ProximityPrompt", "ActionText")
+declareString("ProximityPrompt", "ObjectText")
+declareBool("ProximityPrompt", "Enabled")
+declareF32("ProximityPrompt", "HoldDuration")
+declareF32("ProximityPrompt", "MaxActivationDistance")
+declareBool("ProximityPrompt", "RequiresLineOfSight")
+declareI32("ProximityPrompt", "KeyboardKeyCode")
 
 -- ───────────── Sky ─────────────
-declareF32("Sky", "MoonAngularSize", 0x25C)
-declareF32("Sky", "SunAngularSize", 0x264)
-declareI32("Sky", "StarCount", 0x260)
-declareString("Sky", "MoonTextureId", 0xE0)
-declareString("Sky", "SunTextureId", 0x230)
+declareF32("Sky", "MoonAngularSize")
+declareF32("Sky", "SunAngularSize")
+declareI32("Sky", "StarCount")
+declareString("Sky", "MoonTextureId")
+declareString("Sky", "SunTextureId")
 
--- Skybox faces: write the new id into the existing string buffer, then force a
--- render-view revalidation so the change is picked up.
-local SKYBOX_FACES = {
-	SkyboxBk = 0x110, SkyboxDn = 0x140, SkyboxFt = 0x170,
-	SkyboxLf = 0x1A0, SkyboxRt = 0x1D0, SkyboxUp = 0x200,
-}
-
-for faceName, faceOffset in SKYBOX_FACES do
+for _, faceName in { "SkyboxBk", "SkyboxDn", "SkyboxFt", "SkyboxLf", "SkyboxRt", "SkyboxUp" } do
+	local faceOffset = O("Sky", faceName)
 	declare({ class = "Sky", name = faceName, callback = {
 		get = function(self: any): string
 			return memory_readstring(self, faceOffset)
@@ -505,127 +1280,137 @@ for faceName, faceOffset in SKYBOX_FACES do
 end
 
 -- ───────────── BloomEffect ─────────────
-declareF32("BloomEffect", "Intensity", 0xD0)
-declareF32("BloomEffect", "Size", 0xD4)
-declareF32("BloomEffect", "Threshold", 0xD8)
+declareF32("BloomEffect", "Intensity")
+declareF32("BloomEffect", "Size")
+declareF32("BloomEffect", "Threshold")
 
 -- ───────────── ColorCorrectionEffect ─────────────
-declareColor("ColorCorrectionEffect", "TintColor", 0xD0)
-declareF32("ColorCorrectionEffect", "Brightness", 0xDC)
-declareF32("ColorCorrectionEffect", "Contrast", 0xE0)
+declareColor("ColorCorrectionEffect", "TintColor")
+declareF32("ColorCorrectionEffect", "Brightness")
+declareF32("ColorCorrectionEffect", "Contrast")
 
 -- ───────────── DepthOfFieldEffect ─────────────
-declareF32("DepthOfFieldEffect", "FocusDistance", 0xD4)
-declareF32("DepthOfFieldEffect", "InFocusRadius", 0xD8)
-declareF32("DepthOfFieldEffect", "NearIntensity", 0xDC)
+declareF32("DepthOfFieldEffect", "FocusDistance")
+declareF32("DepthOfFieldEffect", "InFocusRadius")
+declareF32("DepthOfFieldEffect", "NearIntensity")
 
 -- ───────────── Highlight ─────────────
-declareColor("Highlight", "FillColor", 0xE0)
-declareColor("Highlight", "OutlineColor", 0xEC)
-declareF32("Highlight", "FillTransparency", 0xFC)
-declareF32("Highlight", "OutlineTransparency", 0x104)
-declareI32("Highlight", "DepthMode", 0xF8)
+declareColor("Highlight", "FillColor")
+declareColor("Highlight", "OutlineColor")
+declareF32("Highlight", "FillTransparency")
+declareF32("Highlight", "OutlineTransparency")
+declareI32("Highlight", "DepthMode")
 
 -- ───────────── Tool ─────────────
-declareBool("Tool", "CanBeDropped", 0x4C8)
-declareBool("Tool", "Enabled", 0x4C9)
-declareBool("Tool", "ManualActivationOnly", 0x4CA)
-declareBool("Tool", "RequiresHandle", 0x4CB)
-declareString("Tool", "ToolTip", 0x478)
-declareVector("Tool", "GripPos", 0x4BC)
+declareBool("Tool", "CanBeDropped")
+declareBool("Tool", "Enabled")
+declareBool("Tool", "ManualActivationOnly")
+declareBool("Tool", "RequiresHandle")
+declareString("Tool", "ToolTip", "Tool", "Tooltip")
+declareVector("Tool", "GripPos")
 
 -- ───────────── Camera ─────────────
-declare({ class = "Camera", name = "FieldOfView", callback = {
-	get = function(self: any): number
-		return math_deg(memory_readf32(self, 0x160))
-	end,
-	set = function(self: any, value: number)
-		memory_writef32(self, 0x160, math_rad(value))
-	end,
-} })
+do
+	local fovOff = O("Camera", "FieldOfView")
+	declare({ class = "Camera", name = "FieldOfView", callback = {
+		get = function(self: any): number
+			return math_deg(memory_readf32(self, fovOff))
+		end,
+		set = function(self: any, value: number)
+			memory_writef32(self, fovOff, math_rad(value))
+		end,
+	} })
+end
 
 -- ───────────── AnimationTrack ─────────────
-declareBool("AnimationTrack", "Looped", 0xF5)
-declareF32("AnimationTrack", "Speed", 0xE4)
+declareBool("AnimationTrack", "Looped")
+declareF32("AnimationTrack", "Speed")
 
-declare({ class = "AnimationTrack", name = "Animation", callback = {
-	get = function(self: any): number?
-		local ptr = memory_readu64(self, 0xD0)
-		return if ptr ~= 0 then ptr else nil
-	end,
-} })
+do
+	local animOff = O("AnimationTrack", "Animation")
+	declare({ class = "AnimationTrack", name = "Animation", callback = {
+		get = function(self: any): number?
+			local ptr = memory_readu64(self, animOff)
+			return if ptr ~= 0 then ptr else nil
+		end,
+	} })
 
-declare({ class = "AnimationTrack", name = "Animator", callback = {
-	get = function(self: any): number?
-		local ptr = memory_readu64(self, 0x118)
-		return if ptr ~= 0 then ptr else nil
-	end,
-} })
+	local animatorOff = O("AnimationTrack", "Animator")
+	declare({ class = "AnimationTrack", name = "Animator", callback = {
+		get = function(self: any): number?
+			local ptr = memory_readu64(self, animatorOff)
+			return if ptr ~= 0 then ptr else nil
+		end,
+	} })
 
-declare({ class = "AnimationTrack", name = "IsPlaying", callback = {
-	get = function(self: any): boolean
-		return memory_readu8(self, 0xF4) ~= 0
-	end,
-} })
+	local isPlayingOff = O("AnimationTrack", "IsPlaying")
+	declare({ class = "AnimationTrack", name = "IsPlaying", callback = {
+		get = function(self: any): boolean
+			return memory_readu8(self, isPlayingOff) ~= 0
+		end,
+	} })
+end
 
 -- ───────────── Animation ─────────────
-declareString("Animation", "AnimationId", 0xD0)
+declareString("Animation", "AnimationId")
 
 -- ───────────── Animator ─────────────
-local ANIM_TRACK_MT = { __tostring = function(t: any): string return t.AnimationId end }
+do
+	local activeAnims = O("Animator", "ActiveAnimations")
+	local atAnim = O("AnimationTrack", "Animation")
+	local atPlaying = O("AnimationTrack", "IsPlaying")
+	local atSpeed = O("AnimationTrack", "Speed")
+	local atLooped = O("AnimationTrack", "Looped")
+	local animId = O("Animation", "AnimationId")
+	local trackMeta = { __tostring = function(t: any): string return t.AnimationId end }
 
-declare({ class = "Animator", name = "GetPlayingAnimationTracks", callback = {
-	method = function(self: any)
-		local head = memory_readu64(self, 0x868) -- Animator.ActiveAnimations
-		if head == 0 then
-			return {}
-		end
-
-		local result = {}
-		local node = memory_readu64(head)
-		local count = 0
-
-		while node ~= 0 and node ~= head and count < 100 do
-			count += 1
-			local trackPtr = memory_readu64(node + 0x10)
-			if trackPtr ~= 0 then
-				local animationPtr = memory_readu64(trackPtr, 0xD0)
-				if animationPtr ~= 0 then
-					local animId = memory_readstring(animationPtr, 0xD0)
-					result[#result + 1] = setmetatable({
-						AnimationId = animId,
-						IsPlaying = memory_readu8(trackPtr, 0xF4) ~= 0,
-						Speed = memory_readf32(trackPtr, 0xE4),
-						Looped = memory_readu8(trackPtr, 0xF5) ~= 0,
-						Animation = { AnimationId = animId },
-					}, ANIM_TRACK_MT)
-				end
+	declare({ class = "Animator", name = "GetPlayingAnimationTracks", callback = {
+		method = function(self: any)
+			local head = memory_readu64(self, activeAnims)
+			if head == 0 then
+				return {}
 			end
-			node = memory_readu64(node)
-		end
-
-		return result
-	end,
-} })
+			local result = {}
+			local node = memory_readu64(head)
+			local count = 0
+			while node ~= 0 and node ~= head and count < 100 do
+				count += 1
+				local trackPtr = memory_readu64(node + 0x10) -- list-node track pointer
+				if trackPtr ~= 0 then
+					local animationPtr = memory_readu64(trackPtr, atAnim)
+					if animationPtr ~= 0 then
+						local id = memory_readstring(animationPtr, animId)
+						result[#result + 1] = setmetatable({
+							AnimationId = id,
+							IsPlaying = memory_readu8(trackPtr, atPlaying) ~= 0,
+							Speed = memory_readf32(trackPtr, atSpeed),
+							Looped = memory_readu8(trackPtr, atLooped) ~= 0,
+							Animation = { AnimationId = id },
+						}, trackMeta)
+					end
+				end
+				node = memory_readu64(node)
+			end
+			return result
+		end,
+	} })
+end
 
 -- ───────────── Terrain ─────────────
-declareF32("Terrain", "GrassLength", 0x1F8)
-declareColor("Terrain", "WaterColor", 0x1E8)
-declareF32("Terrain", "WaterReflectance", 0x200)
-declareF32("Terrain", "WaterTransparency", 0x204)
-declareF32("Terrain", "WaterWaveSize", 0x208)
-declareF32("Terrain", "WaterWaveSpeed", 0x20C)
+declareF32("Terrain", "GrassLength")
+declareColor("Terrain", "WaterColor")
+declareF32("Terrain", "WaterReflectance")
+declareF32("Terrain", "WaterTransparency")
+declareF32("Terrain", "WaterWaveSize")
+declareF32("Terrain", "WaterWaveSpeed")
 
--- MaterialColors values are byte offsets into the terrain color buffer.
-local MATERIAL_COLORS = {
-	Asphalt = 0x30, Basalt = 0x27, Brick = 0xF, Cobblestone = 0x33,
-	Concrete = 0xC, CrackedLava = 0x2D, Glacier = 0x1B, Grass = 0x6,
-	Ground = 0x2A, Ice = 0x36, LeafyGrass = 0x39, Limestone = 0x3F,
-	Mud = 0x24, Pavement = 0x42, Rock = 0x18, Salt = 0x3C,
-	Sand = 0x12, Sandstone = 0x21, Slate = 0x9, Snow = 0x1E, WoodPlanks = 0x15,
-}
+-- material colors are driven straight off the dump's MaterialColors namespace
+local matColors = Offsets.MaterialColors
+if type(matColors) ~= "table" then
+	error("[offsets] missing MaterialColors namespace — re-paste offsets.lua")
+end
 
-for matName, byteOffset in MATERIAL_COLORS do
+for matName, byteOffset in matColors do
 	declare({ class = "Terrain", name = matName .. "Color", callback = {
 		get = function(self: any): Color3
 			return readMaterialColor(self, byteOffset)
@@ -638,9 +1423,9 @@ end
 
 declare({ class = "Terrain", name = "GetMaterialColor", callback = {
 	method = function(self: any, materialName: string): Color3
-		local byteOffset = MATERIAL_COLORS[materialName]
-		if byteOffset == nil then
-			error(`[Terrain:GetMaterialColor] invalid material name: {materialName}`)
+		local byteOffset = matColors[materialName]
+		if type(byteOffset) ~= "number" then
+			error(`[Terrain:GetMaterialColor] invalid material '{materialName}'`)
 		end
 		return readMaterialColor(self, byteOffset)
 	end,
@@ -648,9 +1433,9 @@ declare({ class = "Terrain", name = "GetMaterialColor", callback = {
 
 declare({ class = "Terrain", name = "SetMaterialColor", callback = {
 	method = function(self: any, materialName: string, color: any)
-		local byteOffset = MATERIAL_COLORS[materialName]
-		if byteOffset == nil then
-			error(`[Terrain:SetMaterialColor] invalid material name: {materialName}`)
+		local byteOffset = matColors[materialName]
+		if type(byteOffset) ~= "number" then
+			error(`[Terrain:SetMaterialColor] invalid material '{materialName}'`)
 		end
 		writeMaterialColor(self, byteOffset, color)
 	end,
@@ -658,7 +1443,6 @@ declare({ class = "Terrain", name = "SetMaterialColor", callback = {
 
 -- ════════════════════════════════════════════════════════════════════
 -- CFrame math (declared on Instance — operates on a part's CFrame basis)
--- Pure helpers so the methods compose correctly on intermediate results.
 -- ════════════════════════════════════════════════════════════════════
 local vector_dot = vector.dot
 
@@ -1028,32 +1812,31 @@ do
 				listeners[i] = listeners[n]
 				listeners[n] = nil
 			else
-				task_spawn(node.fn, ...)
+				-- own coroutine: a listener that errors or yields can't break the caller
+				coroutine_resume(coroutine_create(node.fn), ...)
 			end
 		end
 		local waiters = self._waiters
 		if #waiters > 0 then
 			self._waiters = {}
 			for _, co in waiters do
-				task_spawn(co, ...)
+				coroutine_resume(co, ...)
 			end
 		end
 	end
 
 	function RobloxSignal.Wait(self: any): ...any
 		local waiters = self._waiters
-		waiters[#waiters + 1] = coroutine.running()
-		return coroutine.yield()
+		waiters[#waiters + 1] = coroutine_running()
+		return coroutine_yield()
 	end
 end
 
 -- ════════════════════════════════════════════════════════════════════
 -- TweenService
 -- ════════════════════════════════════════════════════════════════════
-
-local MIN_FRAME      = 1 / 240
-local MAX_FRAME      = 1 / 30
-local UPDATE_INTERVAL = 1 / 144
+local MIN_FRAME = 1 / 240 -- clamps dt so very high FPS doesn't starve progress
+local MAX_FRAME = 1 / 30  -- clamps dt so a lag spike can't jump a tween
 
 -- ───────────── easing ─────────────
 local EasingLibrary: { [string]: any } = {}
@@ -1243,7 +2026,6 @@ local function interpolateCFrame(a: CF, b: CF, alpha: number): any
 	local x2, y2, z2, w2 = quatFromCF(b)
 	local x, y, z, w = quatSlerp(x1, y1, z1, w1, x2, y2, z2, w2, alpha)
 
-	-- basis from quaternion (only up + look needed for lookAt)
 	local x2_, y2_, z2_ = x + x, y + y, z + z
 	local xx, xy, xz = x * x2_, x * y2_, x * z2_
 	local yy, yz = y * y2_, y * z2_
@@ -1304,7 +2086,16 @@ end
 type TweenProp = { name: string, kind: string, target: any, start: any }
 
 local activeTweens: { any } = {}
-local loopRunning = false
+local tweenConnection: any = nil
+local lastTick = 0
+
+-- drop the RunService connection whenever nothing is animating
+local function disconnectIfIdle()
+	if #activeTweens == 0 and tweenConnection ~= nil then
+		tweenConnection:Disconnect()
+		tweenConnection = nil
+	end
+end
 
 local function unregister(tween: any)
 	for i = #activeTweens, 1, -1 do
@@ -1315,6 +2106,7 @@ local function unregister(tween: any)
 			break
 		end
 	end
+	disconnectIfIdle()
 end
 
 local function processTweens(dt: number)
@@ -1333,24 +2125,21 @@ local function processTweens(dt: number)
 	end
 end
 
-local function startLoop()
-	if loopRunning then return end
-	loopRunning = true
-	task_spawn(function()
-		local prev = os_clock()
-		while #activeTweens > 0 do
-			local now = os_clock()
-			processTweens(now - prev)
-			prev = now
-			task_wait(UPDATE_INTERVAL)
-		end
-		loopRunning = false
-	end)
+-- fired every frame by RunService.PostLocal while tweens are active
+local function onTweenStep()
+	local now = os_clock()
+	local dt = now - lastTick
+	lastTick = now
+	processTweens(dt)
+	disconnectIfIdle()
 end
 
 local function register(tween: any)
 	activeTweens[#activeTweens + 1] = tween
-	startLoop()
+	if tweenConnection == nil then
+		lastTick = os_clock()
+		tweenConnection = RunService.PostLocal:Connect(onTweenStep)
+	end
 end
 
 -- ───────────── Tween ─────────────
@@ -1564,5 +2353,7 @@ declare({ class = "TweenService", name = "GetActiveTweens", callback = {
 } })
 
 _G.TweenInfo = TweenInfo
+
+print(`[merge2] loaded — offsets {Offsets.ROBLOX_VERSION}`)
 
 return TweenService
