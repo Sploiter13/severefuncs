@@ -1,7 +1,8 @@
 --!strict
 --!optimize 2
+
 local Offsets: any = (function()
--- Dumped With: roblox-dumper 2.9
+-- Dumped With: roblox-dumper 2.6
 -- Created by: Jonah (jonahw on Discord)
 -- Github: https://github.com/nopjo/roblox-dumper
 -- Roblox Version: version-460909c4fe904aae
@@ -758,6 +759,7 @@ end
 
 -- ───────────── memory aliases ─────────────
 local memory_readu8     = memory.readu8
+local memory_readu32    = memory.readu32
 local memory_readi32    = memory.readi32
 local memory_readu64    = memory.readu64
 local memory_readf32    = memory.readf32
@@ -1150,6 +1152,63 @@ do
 				error("[Humanoid:MoveTo] target must be a Vector3 or a Part")
 			end
 			memory_writevector(self, walkToPoint, pos)
+		end,
+	} })
+end
+
+-- ───────────── Humanoid state ─────────────
+-- HumanoidState (0x8A8) is a pointer to the state object; the current
+-- HumanoidStateType enum lives at HumanoidStateID (0x20) inside it as a u32.
+do
+	local HUMANOID_STATES = table.freeze({
+		[0] = "FallingDown",
+		[1] = "Ragdoll",
+		[2] = "GettingUp",
+		[3] = "Jumping",
+		[4] = "Swimming",
+		[5] = "Freefall",
+		[6] = "Flying",
+		[7] = "Landed",
+		[8] = "Running",
+		[10] = "RunningNoPhysics",
+		[11] = "StrafingNoPhysics",
+		[12] = "Climbing",
+		[13] = "Seated",
+		[14] = "PlatformStanding",
+		[15] = "Dead",
+		[16] = "Physics",
+		[18] = "None",
+	})
+
+	local stateOff = O("Humanoid", "HumanoidState")     -- u64 pointer to the state object
+	local stateIdOff = O("Humanoid", "HumanoidStateID") -- u32 enum within that object
+
+	local function readStateId(self: any): number
+		local statePtr = memory_readu64(self, stateOff)
+		if statePtr == 0 then
+			return 18 -- None
+		end
+		return memory_readu32(statePtr, stateIdOff)
+	end
+
+	-- raw enum value
+	declare({ class = "Humanoid", name = "HumanoidStateId", callback = {
+		get = function(self: any): number
+			return readStateId(self)
+		end,
+	} })
+
+	-- readable name, as a property …
+	declare({ class = "Humanoid", name = "State", callback = {
+		get = function(self: any): string
+			return HUMANOID_STATES[readStateId(self)] or "None"
+		end,
+	} })
+
+	-- … and as a Roblox-style method
+	declare({ class = "Humanoid", name = "GetState", callback = {
+		method = function(self: any): string
+			return HUMANOID_STATES[readStateId(self)] or "None"
 		end,
 	} })
 end
@@ -2086,14 +2145,24 @@ end
 type TweenProp = { name: string, kind: string, target: any, start: any }
 
 local activeTweens: { any } = {}
-local tweenConnection: any = nil
+local stepConn: any = nil  -- the connection handle, if Connect returns one
+local stepping = false     -- whether our callback is logically attached
 local lastTick = 0
 
--- drop the RunService connection whenever nothing is animating
-local function disconnectIfIdle()
-	if #activeTweens == 0 and tweenConnection ~= nil then
-		tweenConnection:Disconnect()
-		tweenConnection = nil
+-- Detach the per-frame loop. The `stepping` flag is the source of truth:
+-- even if this build's connection has no :Disconnect (or Connect returned
+-- nothing), the callback below goes inert, so we never double-process.
+local function stopStepping()
+	if not stepping then
+		return
+	end
+	stepping = false
+	local conn = stepConn
+	stepConn = nil
+	if conn ~= nil then
+		pcall(function()
+			conn:Disconnect()
+		end)
 	end
 end
 
@@ -2106,7 +2175,9 @@ local function unregister(tween: any)
 			break
 		end
 	end
-	disconnectIfIdle()
+	if #activeTweens == 0 then
+		stopStepping()
+	end
 end
 
 local function processTweens(dt: number)
@@ -2127,18 +2198,24 @@ end
 
 -- fired every frame by RunService.PostLocal while tweens are active
 local function onTweenStep()
+	if not stepping then
+		return
+	end
 	local now = os_clock()
 	local dt = now - lastTick
 	lastTick = now
 	processTweens(dt)
-	disconnectIfIdle()
+	if #activeTweens == 0 then
+		stopStepping()
+	end
 end
 
 local function register(tween: any)
 	activeTweens[#activeTweens + 1] = tween
-	if tweenConnection == nil then
+	if not stepping then
+		stepping = true
 		lastTick = os_clock()
-		tweenConnection = RunService.PostLocal:Connect(onTweenStep)
+		stepConn = RunService.PostLocal:Connect(onTweenStep)
 	end
 end
 
