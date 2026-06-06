@@ -730,11 +730,11 @@ end)()
 local function O(ns: string, field: string): number
 	local namespace = Offsets[ns]
 	if namespace == nil then
-		error(`[offsets] missing namespace '{ns}' — re-paste offsets.lua`)
+		error(`[offsets] missing namespace '{ns}' - re-paste offsets.lua`)
 	end
 	local value = namespace[field]
 	if type(value) ~= "number" then
-		error(`[offsets] missing offset '{ns}.{field}' — re-paste offsets.lua`)
+		error(`[offsets] missing offset '{ns}.{field}' - re-paste offsets.lua`)
 	end
 	return value
 end
@@ -1008,7 +1008,7 @@ end
 local ColorSequenceKeypoint = {}
 ColorSequenceKeypoint.__index = ColorSequenceKeypoint
 function ColorSequenceKeypoint.new(time: number, color: any): any
-	return setmetatable({ Time = time, Value = color }, ColorSequenceKeypoint)
+	return setmetatable({ Time = time, Color = color }, ColorSequenceKeypoint)
 end
 
 local ColorSequence = {}
@@ -1071,31 +1071,32 @@ end
 local function readColorSeq(self: any, seqOff: number): any
 	local count = memory_readu32(self, seqOff + 8)
 	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
-	local kps = table.create(count)
+	local out = table.create(count)
 	for i = 0, count - 1 do
 		local o = i * COLOR_STRIDE
-		kps[i + 1] = ColorSequenceKeypoint.new(
-			memory_readf32(arr, o),
-			Color3_new(
+		out[i + 1] = {
+			Time = memory_readf32(arr, o),
+			Color = Color3_new(
 				memory_readf32(arr, o + 4),
 				memory_readf32(arr, o + 8),
-				memory_readf32(arr, o + 12)))
+				memory_readf32(arr, o + 12)),
+		}
 	end
-	return setmetatable({ Keypoints = kps }, ColorSequence)
+	return out
 end
 
 local function readNumberSeq(self: any, seqOff: number): any
 	local count = memory_readu32(self, seqOff + 8)
 	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
-	local kps = table.create(count)
+	local out = table.create(count)
 	for i = 0, count - 1 do
 		local o = i * NUMBER_STRIDE
-		kps[i + 1] = NumberSequenceKeypoint.new(
-			memory_readf32(arr, o),
-			memory_readf32(arr, o + 4),
-			memory_readf32(arr, o + 8))
+		out[i + 1] = {
+			Time = memory_readf32(arr, o),
+			Value = memory_readf32(arr, o + 4),
+		}
 	end
-	return setmetatable({ Keypoints = kps }, NumberSequence)
+	return out
 end
 
 local function writeColorSeqSolid(self: any, seqOff: number, c: vector)
@@ -1125,7 +1126,7 @@ local function writeColorSeqKeypoints(self: any, seqOff: number, kps: { any })
 		local kp = kps[i]
 		local o = (i - 1) * COLOR_STRIDE
 		memory_writef32(arr, o, kp.Time)
-		local c = toColorVector(kp.Value)
+		local c = toColorVector(kp.Color or kp.Value)
 		memory_writef32(arr, o + 4, c.X)
 		memory_writef32(arr, o + 8, c.Y)
 		memory_writef32(arr, o + 12, c.Z)
@@ -1169,7 +1170,7 @@ local function declareSequenceColor(class: string, seqField: string, plainField:
 				if isSeq then
 					writeColorSeqKeypoints(self, seqOff, kps)
 				else
-					memory_writevector(self, plainOff, toColorVector(kps[1].Value))
+					memory_writevector(self, plainOff, toColorVector(kps[1].Color or kps[1].Value))
 				end
 			elseif isSeq then
 				writeColorSeqSolid(self, seqOff, toColorVector(value))
@@ -1623,7 +1624,7 @@ declareF32("Terrain", "WaterWaveSpeed")
 
 local matColors = Offsets.MaterialColors
 if type(matColors) ~= "table" then
-	error("[offsets] missing MaterialColors namespace — re-paste offsets.lua")
+	error("[offsets] missing MaterialColors namespace - re-paste offsets.lua")
 end
 
 for matName, byteOffset in matColors do
@@ -2565,6 +2566,6 @@ declare({ class = "TweenService", name = "GetActiveTweens", callback = {
 
 _G.TweenInfo = TweenInfo
 
-print(`[merge2] loaded — offsets {Offsets.ROBLOX_VERSION}`)
+print(`[merge2] loaded - offsets {Offsets.ROBLOX_VERSION}`)
 
 return TweenService
