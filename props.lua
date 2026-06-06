@@ -1101,35 +1101,35 @@ end
 
 local function writeColorSeqSolid(self: any, seqOff: number, c: vector)
 	local count = memory_readu32(self, seqOff + 8)
-	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
+	local base = memory_readu64(self, seqOff)
 	for i = 0, count - 1 do
-		local o = i * COLOR_STRIDE
-		memory_writef32(arr, o + 4, c.X)
-		memory_writef32(arr, o + 8, c.Y)
-		memory_writef32(arr, o + 12, c.Z)
+		local o = base + i * COLOR_STRIDE
+		memory_writef32(o + 4, c.X)
+		memory_writef32(o + 8, c.Y)
+		memory_writef32(o + 12, c.Z)
 	end
 end
 
 local function writeNumberSeqSolid(self: any, seqOff: number, v: number)
 	local count = memory_readu32(self, seqOff + 8)
-	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
+	local base = memory_readu64(self, seqOff)
 	for i = 0, count - 1 do
-		memory_writef32(arr, i * NUMBER_STRIDE + 4, v)
+		memory_writef32(base + i * NUMBER_STRIDE + 4, v)
 	end
 end
 
 local function writeColorSeqKeypoints(self: any, seqOff: number, kps: { any })
 	local count = memory_readu32(self, seqOff + 8)
-	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
+	local base = memory_readu64(self, seqOff)
 	local n = math_min(count, #kps)
 	for i = 1, n do
 		local kp = kps[i]
-		local o = (i - 1) * COLOR_STRIDE
-		memory_writef32(arr, o, kp.Time)
+		local o = base + (i - 1) * COLOR_STRIDE
+		memory_writef32(o, kp.Time)
 		local c = toColorVector(kp.Color or kp.Value)
-		memory_writef32(arr, o + 4, c.X)
-		memory_writef32(arr, o + 8, c.Y)
-		memory_writef32(arr, o + 12, c.Z)
+		memory_writef32(o + 4, c.X)
+		memory_writef32(o + 8, c.Y)
+		memory_writef32(o + 12, c.Z)
 	end
 	if n < count then
 		memory_writeu32(self, seqOff + 8, n)
@@ -1138,14 +1138,14 @@ end
 
 local function writeNumberSeqKeypoints(self: any, seqOff: number, kps: { any })
 	local count = memory_readu32(self, seqOff + 8)
-	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
+	local base = memory_readu64(self, seqOff)
 	local n = math_min(count, #kps)
 	for i = 1, n do
 		local kp = kps[i]
-		local o = (i - 1) * NUMBER_STRIDE
-		memory_writef32(arr, o, kp.Time)
-		memory_writef32(arr, o + 4, kp.Value)
-		memory_writef32(arr, o + 8, kp.Envelope or 0)
+		local o = base + (i - 1) * NUMBER_STRIDE
+		memory_writef32(o, kp.Time)
+		memory_writef32(o + 4, kp.Value)
+		memory_writef32(o + 8, kp.Envelope or 0)
 	end
 	if n < count then
 		memory_writeu32(self, seqOff + 8, n)
