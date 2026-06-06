@@ -795,8 +795,11 @@ local coroutine_yield   = coroutine.yield
 
 local RunService = game:GetService("RunService")
 
-local Color3_new = Color3.new
-local declare    = Instance.declare
+local Color3_new  = Color3.new
+local Vector2_new = Vector2.new
+local UDim2_new   = UDim2.new
+local CFrame_new  = CFrame.new
+local declare     = Instance.declare
 
 local BASEPART_CLASSES = table.freeze({ "Part", "MeshPart", "UnionOperation", "TrussPart" })
 local GUI_CLASSES = table.freeze({
@@ -1517,6 +1520,366 @@ declare({ class = "Terrain", name = "SetMaterialColor", callback = {
 		writeMaterialColor(self, byteOffset, color)
 	end,
 } })
+
+local function declareInstance(class: any, name: string, ns: string?, field: string?)
+	local offset = O(nsFor(class, ns), field or name)
+	declare({ class = class, name = name, callback = {
+		get = function(self: any): any
+			local ptr = memory_readu64(self, offset)
+			return if ptr ~= 0 then pointer_to_userdata(ptr) else nil
+		end,
+	} })
+end
+
+local function declareEnum(class: any, name: string, ns: string?, field: string?, map: { [number]: string })
+	local offset = O(nsFor(class, ns), field or name)
+	local reverse: { [string]: number } = {}
+	for k, v in map do
+		reverse[v] = k
+	end
+	declare({ class = class, name = name, callback = {
+		get = function(self: any): any
+			local v = memory_readi32(self, offset)
+			return map[v] or v
+		end,
+		set = function(self: any, value: any)
+			if type(value) == "string" then
+				local n = reverse[value]
+				if n ~= nil then
+					memory_writei32(self, offset, n)
+				end
+			else
+				memory_writei32(self, offset, value)
+			end
+		end,
+	} })
+end
+
+local function declareVector2(class: any, name: string, ns: string?, field: string?)
+	local offset = O(nsFor(class, ns), field or name)
+	declare({ class = class, name = name, callback = {
+		get = function(self: any): any
+			return Vector2_new(memory_readf32(self, offset), memory_readf32(self, offset + 4))
+		end,
+		set = function(self: any, value: any)
+			memory_writef32(self, offset, value.X)
+			memory_writef32(self, offset + 4, value.Y)
+		end,
+	} })
+end
+
+local function declareUDim2(class: any, name: string, ns: string?, field: string?)
+	local offset = O(nsFor(class, ns), field or name)
+	declare({ class = class, name = name, callback = {
+		get = function(self: any): any
+			local sx, ox, sy, oy = readUDim2(self, offset)
+			return UDim2_new(sx, ox, sy, oy)
+		end,
+		set = function(self: any, value: any)
+			writeUDim2(self, offset, value.X.Scale, value.X.Offset, value.Y.Scale, value.Y.Offset)
+		end,
+	} })
+end
+
+local function declareCFrame(class: any, name: string, ns: string?, field: string?)
+	local offset = O(nsFor(class, ns), field or name)
+	declare({ class = class, name = name, callback = {
+		get = function(self: any): any
+			return CFrame_new(
+				memory_readf32(self, offset + 0x24),
+				memory_readf32(self, offset + 0x28),
+				memory_readf32(self, offset + 0x2C),
+				memory_readf32(self, offset),
+				memory_readf32(self, offset + 0x4),
+				memory_readf32(self, offset + 0x8),
+				memory_readf32(self, offset + 0xC),
+				memory_readf32(self, offset + 0x10),
+				memory_readf32(self, offset + 0x14),
+				memory_readf32(self, offset + 0x18),
+				memory_readf32(self, offset + 0x1C),
+				memory_readf32(self, offset + 0x20))
+		end,
+	} })
+end
+
+local function declareU64(class: any, name: string, ns: string?, field: string?)
+	local offset = O(nsFor(class, ns), field or name)
+	declare({ class = class, name = name, callback = {
+		get = function(self: any): number
+			return memory_readu64(self, offset)
+		end,
+	} })
+end
+
+local function declareF64(class: any, name: string, ns: string?, field: string?)
+	local offset = O(nsFor(class, ns), field or name)
+	declare({ class = class, name = name, callback = {
+		get = function(self: any): number
+			return memory_readf64(self, offset)
+		end,
+		set = function(self: any, value: number)
+			memory_writef64(self, offset, value)
+		end,
+	} })
+end
+
+local ENUM_MATERIAL = table.freeze({
+	[256] = "Plastic", [272] = "SmoothPlastic", [288] = "Neon", [512] = "Wood", [528] = "WoodPlanks",
+	[784] = "Marble", [788] = "Basalt", [800] = "Slate", [804] = "CrackedLava", [816] = "Concrete",
+	[820] = "Limestone", [832] = "Granite", [836] = "Pavement", [848] = "Brick", [864] = "Pebble",
+	[880] = "Cobblestone", [896] = "Rock", [912] = "Sandstone", [1040] = "CorrodedMetal",
+	[1056] = "DiamondPlate", [1072] = "Foil", [1088] = "Metal", [1280] = "Grass", [1284] = "LeafyGrass",
+	[1296] = "Sand", [1312] = "Fabric", [1328] = "Snow", [1344] = "Mud", [1360] = "Ground",
+	[1376] = "Asphalt", [1392] = "Salt", [1536] = "Ice", [1552] = "Glacier", [1568] = "Glass",
+	[1584] = "ForceField", [1792] = "Air", [2048] = "Water",
+})
+local ENUM_NORMALID = table.freeze({ [0] = "Right", [1] = "Top", [2] = "Back", [3] = "Left", [4] = "Bottom", [5] = "Front" })
+local ENUM_CAMERATYPE = table.freeze({ [0] = "Fixed", [1] = "Attach", [2] = "Watch", [3] = "Track", [4] = "Follow", [5] = "Custom", [6] = "Scriptable", [7] = "Orbital" })
+local ENUM_SCALETYPE = table.freeze({ [0] = "Stretch", [1] = "Slice", [2] = "Tile", [3] = "Fit", [4] = "Crop" })
+local ENUM_ROLLOFF = table.freeze({ [0] = "Inverse", [1] = "Linear", [2] = "LinearSquare", [3] = "InverseTapered" })
+local ENUM_TEXTUREMODE = table.freeze({ [0] = "Stretch", [1] = "Wrap", [2] = "Static" })
+local ENUM_EMISSIONDIR = table.freeze({ [0] = "Top", [1] = "Bottom", [2] = "Front", [3] = "Back", [4] = "Right", [5] = "Left" })
+local ENUM_FONT = table.freeze({
+	[0] = "Legacy", [1] = "Arial", [2] = "ArialBold", [3] = "SourceSans", [4] = "SourceSansBold",
+	[5] = "SourceSansLight", [6] = "SourceSansItalic", [7] = "Bodoni", [8] = "Garamond", [9] = "Cartoon",
+	[10] = "Code", [11] = "Highway", [12] = "SciFi", [13] = "Arcade", [14] = "Fantasy", [15] = "Antique",
+	[16] = "Gotham", [17] = "GothamMedium", [18] = "GothamBold", [19] = "GothamBlack", [20] = "AmaticSC",
+	[21] = "Bangers", [22] = "Creepster", [23] = "DenkOne", [24] = "Fondamento", [25] = "FredokaOne",
+	[26] = "GrenzeGotisch", [27] = "IndieFlower", [28] = "JosefinSans", [29] = "Jura", [30] = "Kalam",
+	[31] = "LuckiestGuy", [32] = "Merriweather", [33] = "Michroma", [34] = "Nunito", [35] = "Oswald",
+	[36] = "PatrickHand", [37] = "PermanentMarker", [38] = "Roboto", [39] = "RobotoCondensed",
+	[40] = "RobotoMono", [41] = "Sarpanch", [42] = "SpecialElite", [43] = "TitilliumWeb", [44] = "Ubuntu",
+})
+local ENUM_XALIGN = table.freeze({ [0] = "Left", [1] = "Right", [2] = "Center" })
+local ENUM_YALIGN = table.freeze({ [0] = "Top", [1] = "Center", [2] = "Bottom" })
+local ENUM_TEXTDIR = table.freeze({ [0] = "Auto", [1] = "LeftToRight", [2] = "RightToLeft" })
+local ENUM_TEXTTRUNCATE = table.freeze({ [0] = "None", [1] = "AtEnd", [2] = "SplitWord" })
+local ENUM_AUTOSIZE = table.freeze({ [0] = "None", [1] = "X", [2] = "Y", [3] = "XY" })
+local ENUM_BORDERMODE = table.freeze({ [0] = "Outline", [1] = "Middle", [2] = "Inset" })
+local ENUM_SIZECONSTRAINT = table.freeze({ [0] = "RelativeXY", [1] = "RelativeXX", [2] = "RelativeYY" })
+local ENUM_SCREENINSETS = table.freeze({ [0] = "None", [1] = "DeviceSafeInsets", [2] = "CoreUISafeInsets", [3] = "TopbarSafeInsets" })
+local ENUM_SIZINGMODE = table.freeze({ [0] = "FixedSize", [1] = "PixelsPerStud" })
+local ENUM_ALPHAMODE = table.freeze({ [0] = "Overlay", [1] = "Transparency" })
+local ENUM_RESAMPLEMODE = table.freeze({ [0] = "Default", [1] = "Pixelated" })
+local ENUM_BODYPART = table.freeze({ [0] = "Head", [1] = "Torso", [2] = "LeftArm", [3] = "RightArm", [4] = "LeftLeg", [5] = "RightLeg" })
+local ENUM_DISPLAYDIST = table.freeze({ [0] = "Viewer", [1] = "Subject", [2] = "None" })
+local ENUM_HEALTHDISPLAY = table.freeze({ [0] = "DisplayWhenDamaged", [1] = "AlwaysOn", [2] = "AlwaysOff" })
+local ENUM_NAMEOCCLUSION = table.freeze({ [0] = "NoOcclusion", [1] = "EnemyOcclusion", [2] = "OccludeAll" })
+
+local LIGHT_CLASSES = table.freeze({ "PointLight", "SpotLight", "SurfaceLight" })
+
+declareF32(BASEPART_CLASSES, "Transparency", "BasePart")
+declarePrimitiveFlag("CanCollide", O("PrimitiveFlags", "CanCollide"))
+
+declareBool("Attachment", "Visible")
+declareCFrame("Attachment", "CFrame")
+
+declareF32("AnimationTrack", "TimePosition")
+
+declareF32("Humanoid", "Health")
+declareF32("Humanoid", "MaxHealth")
+declareString("Humanoid", "DisplayName")
+declareVector("Humanoid", "CameraOffset")
+declareVector("Humanoid", "TargetPoint")
+declareBool("Humanoid", "Sit")
+declareBool("Humanoid", "PlatformStand")
+declareBool("Humanoid", "AutomaticScalingEnabled")
+declareBool("Humanoid", "EvaluateStateMachine")
+declareEnum("Humanoid", "DisplayDistanceType", nil, nil, ENUM_DISPLAYDIST)
+declareEnum("Humanoid", "HealthDisplayType", nil, nil, ENUM_HEALTHDISPLAY)
+declareEnum("Humanoid", "NameOcclusion", nil, nil, ENUM_NAMEOCCLUSION)
+declareInstance("Humanoid", "SeatPart")
+declareInstance("Humanoid", "HumanoidRootPart")
+
+declareString("Sound", "SoundId")
+declareF32("Sound", "Volume")
+declareF32("Sound", "PlaybackSpeed")
+declareBool("Sound", "Looped")
+declareBool("Sound", "PlayOnRemove")
+declareBool("Sound", "PlaybackRegionsEnabled")
+declareF32("Sound", "RollOffMaxDistance")
+declareF32("Sound", "RollOffMinDistance")
+declareEnum("Sound", "RollOffMode", nil, nil, ENUM_ROLLOFF)
+
+declareF32(LIGHT_CLASSES, "Brightness", "Light")
+declareColor(LIGHT_CLASSES, "Color", "Light")
+declareBool(LIGHT_CLASSES, "Enabled", "Light")
+declareBool(LIGHT_CLASSES, "Shadows", "Light")
+declareF32("PointLight", "Range")
+declareF32("SpotLight", "Angle")
+declareF32("SpotLight", "Range")
+declareEnum("SpotLight", "Face", nil, nil, ENUM_NORMALID)
+declareF32("SurfaceLight", "Angle")
+declareF32("SurfaceLight", "Range")
+declareEnum("SurfaceLight", "Face", nil, nil, ENUM_NORMALID)
+
+declareF32("Lighting", "EnvironmentDiffuseScale")
+declareF32("Lighting", "EnvironmentSpecularScale")
+declareF32("Lighting", "ShadowSoftness")
+
+declareBool("BloomEffect", "Enabled")
+declareBool("BlurEffect", "Enabled")
+declareF32("BlurEffect", "Size")
+declareBool("ColorCorrectionEffect", "Enabled")
+declareBool("DepthOfFieldEffect", "Enabled")
+declareF32("DepthOfFieldEffect", "FarIntensity")
+declareBool("ColorGradingEffect", "Enabled")
+declareI32("ColorGradingEffect", "TonemapperPreset")
+declareBool("Highlight", "Enabled")
+declareF32("SunRaysEffect", "Intensity")
+declareF32("SunRaysEffect", "Spread")
+
+declareVector("ParticleEmitter", "Acceleration")
+declareF32("ParticleEmitter", "Brightness")
+declareF32("ParticleEmitter", "Drag")
+declareBool("ParticleEmitter", "Enabled")
+declareF32("ParticleEmitter", "LightEmission")
+declareF32("ParticleEmitter", "LightInfluence")
+declareF32("ParticleEmitter", "Rate")
+declareF32("ParticleEmitter", "TimeScale")
+declareF32("ParticleEmitter", "VelocityInheritance")
+declareF32("ParticleEmitter", "ZOffset")
+declareEnum("ParticleEmitter", "EmissionDirection", nil, nil, ENUM_EMISSIONDIR)
+
+declareInstance("Beam", "Attachment0")
+declareInstance("Beam", "Attachment1")
+declareF32("Beam", "Brightness")
+declareF32("Beam", "CurveSize0")
+declareF32("Beam", "CurveSize1")
+declareBool("Beam", "Enabled")
+declareBool("Beam", "FaceCamera")
+declareF32("Beam", "LightEmission")
+declareF32("Beam", "LightInfluence")
+declareI32("Beam", "Segments")
+declareF32("Beam", "TextureLength")
+declareF32("Beam", "TextureSpeed")
+declareEnum("Beam", "TextureMode", nil, nil, ENUM_TEXTUREMODE)
+declareF32("Beam", "Width0")
+declareF32("Beam", "Width1")
+declareF32("Beam", "ZOffset")
+
+declareString("ImageLabel", "Image")
+declareColor("ImageLabel", "ImageColor3")
+declareF32("ImageLabel", "ImageTransparency")
+declareEnum("ImageLabel", "ScaleType", nil, nil, ENUM_SCALETYPE)
+declareString("ImageButton", "Image")
+declareString("ImageButton", "HoverImage")
+declareString("ImageButton", "PressedImage")
+declareColor("ImageButton", "ImageColor3")
+
+for _, cls in TEXT_CLASSES do
+	declareEnum(cls, "Font", nil, nil, ENUM_FONT)
+	declareBool(cls, "RichText")
+	declareBool(cls, "TextScaled")
+	declareBool(cls, "TextWrapped")
+	declareEnum(cls, "TextXAlignment", nil, nil, ENUM_XALIGN)
+	declareEnum(cls, "TextYAlignment", nil, nil, ENUM_YALIGN)
+	declareEnum(cls, "TextTruncate", nil, nil, ENUM_TEXTTRUNCATE)
+	declareEnum(cls, "TextDirection", nil, nil, ENUM_TEXTDIR)
+	declareI32(cls, "MaxVisibleGraphemes")
+end
+declareString("TextBox", "PlaceholderText")
+declareColor("TextBox", "PlaceholderColor3")
+declareBool("TextBox", "ClearTextOnFocus")
+declareBool("TextBox", "MultiLine")
+declareBool("TextBox", "TextEditable")
+declareBool("TextBox", "ShowNativeInput")
+declareBool("TextButton", "AutoButtonColor")
+declareBool("TextButton", "Modal")
+declareBool("TextButton", "Selected")
+
+declareBool(GUI_CLASSES, "Interactable", "GuiObject")
+declareI32(GUI_CLASSES, "SelectionOrder", "GuiObject")
+declareEnum(GUI_CLASSES, "AutomaticSize", "GuiObject", nil, ENUM_AUTOSIZE)
+declareEnum(GUI_CLASSES, "BorderMode", "GuiObject", nil, ENUM_BORDERMODE)
+declareEnum(GUI_CLASSES, "SizeConstraint", "GuiObject", nil, ENUM_SIZECONSTRAINT)
+
+declareBool("ScreenGui", "Enabled")
+declareI32("ScreenGui", "DisplayOrder")
+declareBool("ScreenGui", "ResetOnSpawn")
+declareBool("ScreenGui", "ClipToDeviceSafeArea")
+declareEnum("ScreenGui", "ScreenInsets", nil, nil, ENUM_SCREENINSETS)
+
+declareVector2("ScrollingFrame", "CanvasPosition")
+declareUDim2("ScrollingFrame", "CanvasSize")
+declareI32("ScrollingFrame", "ScrollBarThickness")
+declareI32("ScrollingFrame", "ScrollingDirection")
+
+declareBool("BillboardGui", "Active")
+declareInstance("BillboardGui", "Adornee")
+declareBool("BillboardGui", "AlwaysOnTop")
+declareF32("BillboardGui", "Brightness")
+declareBool("BillboardGui", "ClipsDescendants")
+declareF32("BillboardGui", "MaxDistance")
+declareF32("BillboardGui", "LightInfluence")
+declareUDim2("BillboardGui", "Size")
+declareVector("BillboardGui", "StudsOffset")
+declareVector("BillboardGui", "ExtentsOffset")
+
+declareF32("SurfaceGui", "PixelsPerStud")
+declareF32("SurfaceGui", "ToolPunchThroughDistance")
+declareF32("SurfaceGui", "ZOffset")
+declareEnum("SurfaceGui", "SizingMode", nil, nil, ENUM_SIZINGMODE)
+
+declareBool("UIGradient", "Enabled")
+declareVector2("UIGradient", "Offset")
+declareF32("UIGradient", "Rotation")
+
+declareEnum("Camera", "CameraType", nil, nil, ENUM_CAMERATYPE)
+declareVector2("Camera", "ViewportSize")
+
+declareInstance("Model", "PrimaryPart")
+declareCFrame("Model", "WorldPivot")
+
+declareInstance("Seat", "Occupant")
+declareInstance("VehicleSeat", "Occupant")
+declareF32("VehicleSeat", "MaxSpeed")
+declareF32("VehicleSeat", "SteerFloat")
+declareF32("VehicleSeat", "ThrottleFloat")
+declareF32("VehicleSeat", "Torque")
+declareF32("VehicleSeat", "TurnSpeed")
+
+declareBool("SpawnLocation", "Enabled")
+declareBool("SpawnLocation", "Neutral")
+declareBool("SpawnLocation", "AllowTeamChangeOnTouch")
+declareI32("SpawnLocation", "Duration")
+
+declareBool("WeldConstraint", "Enabled")
+declareInstance("WeldConstraint", "Part0")
+declareInstance("WeldConstraint", "Part1")
+
+declareCFrame("Tool", "Grip")
+declareVector("Tool", "GripForward")
+declareVector("Tool", "GripRight")
+declareVector("Tool", "GripUp")
+
+declareString("MeshPart", "MeshId")
+declareString("MeshPart", "TextureId")
+declareString("SpecialMesh", "MeshId")
+declareString("SpecialMesh", "TextureId")
+declareVector("SpecialMesh", "Scale")
+declareVector("SpecialMesh", "Offset")
+declareString("CharacterMesh", "MeshId")
+declareString("CharacterMesh", "BaseTextureId")
+declareString("CharacterMesh", "OverlayTextureId")
+declareEnum("CharacterMesh", "BodyPart", nil, nil, ENUM_BODYPART)
+
+declareColor("SurfaceAppearance", "Color")
+declareF32("SurfaceAppearance", "EmissiveStrength")
+declareEnum("SurfaceAppearance", "AlphaMode", nil, nil, ENUM_ALPHAMODE)
+declareEnum("SurfaceAppearance", "ResampleMode", nil, nil, ENUM_RESAMPLEMODE)
+
+declareF32("ClickDetector", "MaxActivationDistance")
+
+declareVector("Sky", "SkyboxOrientation")
+
+declareF32("Workspace", "FallenPartsDestroyHeight")
+declareF32("Workspace", "Gravity", "Workspace", "ReadOnlyGravity")
+
+declareU64("DataModel", "PlaceId")
+declareU64("DataModel", "GameId")
+declareU64("DataModel", "CreatorId")
+declareString("DataModel", "JobId")
 
 local vector_dot = vector.dot
 
