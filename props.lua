@@ -1,13 +1,8 @@
 --!strict
 --!optimize 2
 
+
 local Offsets: any = (function()
--- Dumped With: roblox-dumper 2.6
--- Created by: Jonah (jonahw on Discord)
--- Github: https://github.com/nopjo/roblox-dumper
--- Roblox Version: version-460909c4fe904aae
--- Time Taken: 5715 ms (5.715000 seconds)
--- Total Offsets: 495
 
 local offsets = {
 
@@ -730,10 +725,8 @@ local offsets = {
 }
 
 return offsets
--- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ PASTE offsets.lua ABOVE ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 end)()
 
--- ───────────── offset resolver (validates at load) ─────────────
 local function O(ns: string, field: string): number
 	local namespace = Offsets[ns]
 	if namespace == nil then
@@ -746,7 +739,6 @@ local function O(ns: string, field: string): number
 	return value
 end
 
--- namespace defaults to the class name when it's a single string
 local function nsFor(class: any, ns: string?): string
 	if ns ~= nil then
 		return ns
@@ -757,7 +749,6 @@ local function nsFor(class: any, ns: string?): string
 	error("[offsets] explicit namespace required for multi-class declarations")
 end
 
--- ───────────── memory aliases ─────────────
 local memory_readu8     = memory.readu8
 local memory_readu32    = memory.readu32
 local memory_readi32    = memory.readi32
@@ -777,7 +768,6 @@ local memory_writestring = memory.writestring
 
 local memory_base = memory.base
 
--- ───────────── library aliases ─────────────
 local vector_create = vector.create
 local vector_floor  = vector.floor
 
@@ -803,13 +793,11 @@ local coroutine_resume  = coroutine.resume
 local coroutine_running = coroutine.running
 local coroutine_yield   = coroutine.yield
 
--- RunService drives the per-frame tween loop (no task library)
 local RunService = game:GetService("RunService")
 
 local Color3_new = Color3.new
 local declare    = Instance.declare
 
--- ───────────── class groups ─────────────
 local BASEPART_CLASSES = table.freeze({ "Part", "MeshPart", "UnionOperation", "TrussPart" })
 local GUI_CLASSES = table.freeze({
 	"Frame", "TextLabel", "TextButton", "TextBox",
@@ -817,7 +805,6 @@ local GUI_CLASSES = table.freeze({
 })
 local TEXT_CLASSES = table.freeze({ "TextLabel", "TextButton", "TextBox" })
 
--- ───────────── structural offsets (resolved once) ─────────────
 local OFF_PRIMITIVE  = O("BasePart", "Primitive")
 local OFF_PRIM_FLAGS = O("Primitive", "Flags")
 local OFF_MATCOLORS  = O("Terrain", "MaterialColors")
@@ -827,9 +814,6 @@ local VE_RENDERVIEW = O("VisualEngine", "RenderView")
 local RV_LIGHTING   = O("RenderView", "LightingValid")
 local RV_SKY        = O("RenderView", "SkyValid")
 
--- ════════════════════════════════════════════════════════════════════
--- conversion helpers (complex + reused in many setters)
--- ════════════════════════════════════════════════════════════════════
 local function toVector(value: any): vector
 	if type(value) == "vector" then
 		return value
@@ -872,7 +856,6 @@ local function round3(v: vector): vector
 	return vector_floor(v * 1000 + ROUND_HALF) * 0.001
 end
 
--- ───────────── UDim2 layout (reused by GUI Position/Size) ─────────────
 local function readUDim2(self: any, offset: number): (number, number, number, number)
 	return memory_readf32(self, offset),
 		memory_readi32(self, offset + 0x4),
@@ -887,7 +870,6 @@ local function writeUDim2(self: any, offset: number, sx: number, ox: number, sy:
 	memory_writei32(self, offset + 0xC, oy)
 end
 
--- ───────────── terrain material colors (byte offsets into the buffer) ─────────────
 local function readMaterialColor(self: any, byteOffset: number): Color3
 	local ptr = memory_readu64(self, OFF_MATCOLORS)
 	return Color3_new(
@@ -905,7 +887,6 @@ local function writeMaterialColor(self: any, byteOffset: number, color: any)
 	memory_writeu8(ptr, byteOffset + 2, math_floor(c.Z * 255 + 0.5))
 end
 
--- ───────────── render view (VisualEngine chain) ─────────────
 local function getRenderView(): number
 	local ve = memory_readu64(memory_base + VE_POINTER)
 	if ve == 0 then
@@ -923,11 +904,6 @@ local function invalidateRender()
 	memory_writeu8(rv + RV_SKY, 0)
 end
 
--- ════════════════════════════════════════════════════════════════════
--- declaration factories — run once at load; the resolved offset becomes
--- an immutable upvalue, so the get/set closures cost the same as
--- hand-written memory.* calls. ns defaults to class, field defaults to name.
--- ════════════════════════════════════════════════════════════════════
 local function declareF32(class: any, name: string, ns: string?, field: string?)
 	local offset = O(nsFor(class, ns), field or name)
 	declare({ class = class, name = name, callback = {
@@ -1013,7 +989,6 @@ local function declareVector(class: any, name: string, ns: string?, field: strin
 	} })
 end
 
--- Anchored / CanQuery / CanTouch are bits in the Primitive flags byte.
 local function declarePrimitiveFlag(name: string, mask: number)
 	declare({ class = BASEPART_CLASSES, name = name, callback = {
 		get = function(self: any): boolean
@@ -1029,10 +1004,149 @@ local function declarePrimitiveFlag(name: string, mask: number)
 	} })
 end
 
--- ───────────── ParticleEmitter ─────────────
-declareColor("ParticleEmitter", "Color")
+local COLOR_STRIDE = 20
+local NUMBER_STRIDE = 12
 
--- ───────────── Atmosphere ─────────────
+local function readColorSeq(self: any, seqOff: number)
+	local count = memory_readu32(self, seqOff + 8)
+	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
+	local out = table.create(count)
+	for i = 0, count - 1 do
+		local o = i * COLOR_STRIDE
+		out[i + 1] = {
+			Time = memory_readf32(arr, o),
+			Color = Color3_new(
+				memory_readf32(arr, o + 4),
+				memory_readf32(arr, o + 8),
+				memory_readf32(arr, o + 12)),
+		}
+	end
+	return out
+end
+
+local function readNumberSeq(self: any, seqOff: number)
+	local count = memory_readu32(self, seqOff + 8)
+	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
+	local out = table.create(count)
+	for i = 0, count - 1 do
+		local o = i * NUMBER_STRIDE
+		out[i + 1] = {
+			Time = memory_readf32(arr, o),
+			Value = memory_readf32(arr, o + 4),
+		}
+	end
+	return out
+end
+
+local function writeColorSeqSolid(self: any, seqOff: number, c: vector)
+	local count = memory_readu32(self, seqOff + 8)
+	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
+	for i = 0, count - 1 do
+		local o = i * COLOR_STRIDE
+		memory_writef32(arr, o + 4, c.X)
+		memory_writef32(arr, o + 8, c.Y)
+		memory_writef32(arr, o + 12, c.Z)
+	end
+end
+
+local function writeNumberSeqSolid(self: any, seqOff: number, v: number)
+	local count = memory_readu32(self, seqOff + 8)
+	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
+	for i = 0, count - 1 do
+		memory_writef32(arr, i * NUMBER_STRIDE + 4, v)
+	end
+end
+
+local function writeColorSeqKeypoints(self: any, seqOff: number, kps: { any })
+	local count = memory_readu32(self, seqOff + 8)
+	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
+	local n = math_min(count, #kps)
+	for i = 1, n do
+		local c = toColorVector(kps[i].Color)
+		local o = (i - 1) * COLOR_STRIDE
+		memory_writef32(arr, o + 4, c.X)
+		memory_writef32(arr, o + 8, c.Y)
+		memory_writef32(arr, o + 12, c.Z)
+	end
+end
+
+local function writeNumberSeqKeypoints(self: any, seqOff: number, kps: { any })
+	local count = memory_readu32(self, seqOff + 8)
+	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
+	local n = math_min(count, #kps)
+	for i = 1, n do
+		memory_writef32(arr, (i - 1) * NUMBER_STRIDE + 4, kps[i].Value)
+	end
+end
+
+local function isColorKeypointArray(value: any): boolean
+	return type(value) == "table" and type(value[1]) == "table" and value[1].Color ~= nil
+end
+
+local function isNumberKeypointArray(value: any): boolean
+	return type(value) == "table" and type(value[1]) == "table" and value[1].Value ~= nil
+end
+
+local function declareSequenceColor(class: string, seqField: string, plainField: string)
+	local seqOff = O(class, seqField)
+	local plainOff = O(class, plainField)
+	declare({ class = class, name = plainField, callback = {
+		get = function(self: any): any
+			local count = memory_readu32(self, seqOff + 8)
+			if count > 1 and count < 100 then
+				return readColorSeq(self, seqOff)
+			end
+			local r = memory_readvector(self, plainOff)
+			return Color3_new(r.X, r.Y, r.Z)
+		end,
+		set = function(self: any, value: any)
+			local count = memory_readu32(self, seqOff + 8)
+			if count > 1 and count < 100 then
+				if isColorKeypointArray(value) then
+					writeColorSeqKeypoints(self, seqOff, value)
+				else
+					writeColorSeqSolid(self, seqOff, toColorVector(value))
+				end
+			else
+				memory_writevector(self, plainOff, toColorVector(value))
+			end
+		end,
+	} })
+end
+
+local function declareSequenceNumber(class: string, seqField: string, plainField: string)
+	local seqOff = O(class, seqField)
+	local plainOff = O(class, plainField)
+	declare({ class = class, name = plainField, callback = {
+		get = function(self: any): any
+			local count = memory_readu32(self, seqOff + 8)
+			if count > 1 and count < 100 then
+				return readNumberSeq(self, seqOff)
+			end
+			return memory_readf32(self, plainOff)
+		end,
+		set = function(self: any, value: any)
+			local count = memory_readu32(self, seqOff + 8)
+			if count > 1 and count < 100 then
+				if isNumberKeypointArray(value) then
+					writeNumberSeqKeypoints(self, seqOff, value)
+				else
+					writeNumberSeqSolid(self, seqOff, value)
+				end
+			else
+				memory_writef32(self, plainOff, value)
+			end
+		end,
+	} })
+end
+
+declareSequenceColor("ParticleEmitter", "ColorSequence", "Color")
+declareSequenceNumber("ParticleEmitter", "TransparencySequence", "Transparency")
+declareSequenceColor("Beam", "ColorSequence", "Color")
+declareSequenceNumber("Beam", "TransparencySequence", "Transparency")
+declareSequenceColor("UIGradient", "ColorSequence", "Color")
+declareSequenceNumber("UIGradient", "TransparencySequence", "Transparency")
+
 declareColor("Atmosphere", "Color")
 declareF32("Atmosphere", "Decay")
 declareF32("Atmosphere", "Density")
@@ -1040,7 +1154,6 @@ declareF32("Atmosphere", "Glare")
 declareF32("Atmosphere", "Haze")
 declareF32("Atmosphere", "Offset")
 
--- ───────────── BasePart (direct) ─────────────
 declareF32(BASEPART_CLASSES, "Reflectance", "BasePart")
 declareColor(BASEPART_CLASSES, "Color", "BasePart", "Color3")
 declareBool(BASEPART_CLASSES, "CastShadow", "BasePart")
@@ -1048,7 +1161,6 @@ declareBool(BASEPART_CLASSES, "Locked", "BasePart")
 declareBool(BASEPART_CLASSES, "Massless", "BasePart")
 declareU8(BASEPART_CLASSES, "Shape", "BasePart")
 
--- ───────────── BasePart (through Primitive) ─────────────
 do
 	local velLinear = O("Primitive", "AssemblyLinearVelocity")
 	local velAngular = O("Primitive", "AssemblyAngularVelocity")
@@ -1086,7 +1198,6 @@ declarePrimitiveFlag("Anchored", O("PrimitiveFlags", "Anchored"))
 declarePrimitiveFlag("CanQuery", O("PrimitiveFlags", "CanQuery"))
 declarePrimitiveFlag("CanTouch", O("PrimitiveFlags", "CanTouch"))
 
--- ───────────── Humanoid ─────────────
 declareF32("Humanoid", "HipHeight")
 declareF32("Humanoid", "MaxSlopeAngle")
 declareF32("Humanoid", "JumpPower")
@@ -1156,9 +1267,6 @@ do
 	} })
 end
 
--- ───────────── Humanoid state ─────────────
--- HumanoidState (0x8A8) is a pointer to the state object; the current
--- HumanoidStateType enum lives at HumanoidStateID (0x20) inside it as a u32.
 do
 	local HUMANOID_STATES = table.freeze({
 		[0] = "FallingDown",
@@ -1180,32 +1288,29 @@ do
 		[18] = "None",
 	})
 
-	local stateOff = O("Humanoid", "HumanoidState")     -- u64 pointer to the state object
-	local stateIdOff = O("Humanoid", "HumanoidStateID") -- u32 enum within that object
+	local stateOff = O("Humanoid", "HumanoidState")
+	local stateIdOff = O("Humanoid", "HumanoidStateID")
 
 	local function readStateId(self: any): number
 		local statePtr = memory_readu64(self, stateOff)
 		if statePtr == 0 then
-			return 18 -- None
+			return 18
 		end
 		return memory_readu32(statePtr, stateIdOff)
 	end
 
-	-- raw enum value
 	declare({ class = "Humanoid", name = "HumanoidStateId", callback = {
 		get = function(self: any): number
 			return readStateId(self)
 		end,
 	} })
 
-	-- readable name, as a property …
 	declare({ class = "Humanoid", name = "State", callback = {
 		get = function(self: any): string
 			return HUMANOID_STATES[readStateId(self)] or "None"
 		end,
 	} })
 
-	-- … and as a Roblox-style method
 	declare({ class = "Humanoid", name = "GetState", callback = {
 		method = function(self: any): string
 			return HUMANOID_STATES[readStateId(self)] or "None"
@@ -1213,7 +1318,6 @@ do
 	} })
 end
 
--- ───────────── GuiObject ─────────────
 declareBool(GUI_CLASSES, "Active", "GuiObject")
 declareBool(GUI_CLASSES, "ClipsDescendants", "GuiObject")
 declareBool(GUI_CLASSES, "Selectable", "GuiObject")
@@ -1271,7 +1375,6 @@ do
 	} })
 end
 
--- ───────────── Text classes (each class resolves its own offsets) ─────────────
 for _, cls in TEXT_CLASSES do
 	declareString(cls, "Text")
 	declareColor(cls, "TextColor3")
@@ -1282,7 +1385,6 @@ for _, cls in TEXT_CLASSES do
 	declareF32(cls, "LineHeight")
 end
 
--- ───────────── Lighting ─────────────
 declareColor("Lighting", "Ambient")
 declareF32("Lighting", "Brightness")
 declareColor("Lighting", "ColorShift_Bottom")
@@ -1305,7 +1407,6 @@ do
 	} })
 end
 
--- ───────────── ProximityPrompt ─────────────
 declareString("ProximityPrompt", "ActionText")
 declareString("ProximityPrompt", "ObjectText")
 declareBool("ProximityPrompt", "Enabled")
@@ -1314,7 +1415,6 @@ declareF32("ProximityPrompt", "MaxActivationDistance")
 declareBool("ProximityPrompt", "RequiresLineOfSight")
 declareI32("ProximityPrompt", "KeyboardKeyCode")
 
--- ───────────── Sky ─────────────
 declareF32("Sky", "MoonAngularSize")
 declareF32("Sky", "SunAngularSize")
 declareI32("Sky", "StarCount")
@@ -1338,29 +1438,24 @@ for _, faceName in { "SkyboxBk", "SkyboxDn", "SkyboxFt", "SkyboxLf", "SkyboxRt",
 	} })
 end
 
--- ───────────── BloomEffect ─────────────
 declareF32("BloomEffect", "Intensity")
 declareF32("BloomEffect", "Size")
 declareF32("BloomEffect", "Threshold")
 
--- ───────────── ColorCorrectionEffect ─────────────
 declareColor("ColorCorrectionEffect", "TintColor")
 declareF32("ColorCorrectionEffect", "Brightness")
 declareF32("ColorCorrectionEffect", "Contrast")
 
--- ───────────── DepthOfFieldEffect ─────────────
 declareF32("DepthOfFieldEffect", "FocusDistance")
 declareF32("DepthOfFieldEffect", "InFocusRadius")
 declareF32("DepthOfFieldEffect", "NearIntensity")
 
--- ───────────── Highlight ─────────────
 declareColor("Highlight", "FillColor")
 declareColor("Highlight", "OutlineColor")
 declareF32("Highlight", "FillTransparency")
 declareF32("Highlight", "OutlineTransparency")
 declareI32("Highlight", "DepthMode")
 
--- ───────────── Tool ─────────────
 declareBool("Tool", "CanBeDropped")
 declareBool("Tool", "Enabled")
 declareBool("Tool", "ManualActivationOnly")
@@ -1368,7 +1463,6 @@ declareBool("Tool", "RequiresHandle")
 declareString("Tool", "ToolTip", "Tool", "Tooltip")
 declareVector("Tool", "GripPos")
 
--- ───────────── Camera ─────────────
 do
 	local fovOff = O("Camera", "FieldOfView")
 	declare({ class = "Camera", name = "FieldOfView", callback = {
@@ -1381,7 +1475,6 @@ do
 	} })
 end
 
--- ───────────── AnimationTrack ─────────────
 declareBool("AnimationTrack", "Looped")
 declareF32("AnimationTrack", "Speed")
 
@@ -1410,10 +1503,8 @@ do
 	} })
 end
 
--- ───────────── Animation ─────────────
 declareString("Animation", "AnimationId")
 
--- ───────────── Animator ─────────────
 do
 	local activeAnims = O("Animator", "ActiveAnimations")
 	local atAnim = O("AnimationTrack", "Animation")
@@ -1434,7 +1525,7 @@ do
 			local count = 0
 			while node ~= 0 and node ~= head and count < 100 do
 				count += 1
-				local trackPtr = memory_readu64(node + 0x10) -- list-node track pointer
+				local trackPtr = memory_readu64(node + 0x10)
 				if trackPtr ~= 0 then
 					local animationPtr = memory_readu64(trackPtr, atAnim)
 					if animationPtr ~= 0 then
@@ -1455,7 +1546,6 @@ do
 	} })
 end
 
--- ───────────── Terrain ─────────────
 declareF32("Terrain", "GrassLength")
 declareColor("Terrain", "WaterColor")
 declareF32("Terrain", "WaterReflectance")
@@ -1463,7 +1553,6 @@ declareF32("Terrain", "WaterTransparency")
 declareF32("Terrain", "WaterWaveSize")
 declareF32("Terrain", "WaterWaveSpeed")
 
--- material colors are driven straight off the dump's MaterialColors namespace
 local matColors = Offsets.MaterialColors
 if type(matColors) ~= "table" then
 	error("[offsets] missing MaterialColors namespace — re-paste offsets.lua")
@@ -1500,9 +1589,6 @@ declare({ class = "Terrain", name = "SetMaterialColor", callback = {
 	end,
 } })
 
--- ════════════════════════════════════════════════════════════════════
--- CFrame math (declared on Instance — operates on a part's CFrame basis)
--- ════════════════════════════════════════════════════════════════════
 local vector_dot = vector.dot
 
 type CF = { Position: vector, RightVector: vector, UpVector: vector, LookVector: vector }
@@ -1767,7 +1853,6 @@ declare({ class = "Instance", name = "AngleBetween", callback = {
 	end,
 } })
 
--- ───────────── Model:GetBoundingBox ─────────────
 local BBOX_PARTS = { Part = true, MeshPart = true, UnionOperation = true, TrussPart = true }
 
 declare({ class = "Model", name = "GetBoundingBox", callback = {
@@ -1804,7 +1889,6 @@ declare({ class = "Model", name = "GetBoundingBox", callback = {
 	end,
 } })
 
--- ───────────── Instance:GetFullName ─────────────
 declare({ class = "Instance", name = "GetFullName", callback = {
 	method = function(self: any): string
 		local parts = {}
@@ -1829,9 +1913,6 @@ declare({ class = "Instance", name = "GetFullName", callback = {
 	end,
 } })
 
--- ════════════════════════════════════════════════════════════════════
--- Signal (minimal — only used for Tween.Completed)
--- ════════════════════════════════════════════════════════════════════
 local RobloxSignal = {}
 do
 	RobloxSignal.__index = RobloxSignal
@@ -1871,7 +1952,6 @@ do
 				listeners[i] = listeners[n]
 				listeners[n] = nil
 			else
-				-- own coroutine: a listener that errors or yields can't break the caller
 				coroutine_resume(coroutine_create(node.fn), ...)
 			end
 		end
@@ -1891,13 +1971,9 @@ do
 	end
 end
 
--- ════════════════════════════════════════════════════════════════════
--- TweenService
--- ════════════════════════════════════════════════════════════════════
-local MIN_FRAME = 1 / 240 -- clamps dt so very high FPS doesn't starve progress
-local MAX_FRAME = 1 / 30  -- clamps dt so a lag spike can't jump a tween
+local MIN_FRAME = 1 / 240
+local MAX_FRAME = 1 / 30
 
--- ───────────── easing ─────────────
 local EasingLibrary: { [string]: any } = {}
 
 EasingLibrary.Linear = function(t: number): number
@@ -2034,7 +2110,6 @@ local function getEasingFunction(style: string, direction: string): (number) -> 
 	return group[direction] or group.Out or EasingLibrary.Linear
 end
 
--- ───────────── CFrame interpolation (quaternion slerp) ─────────────
 local function quatFromCF(cf: CF): (number, number, number, number)
 	local r, u, l = cf.RightVector, cf.UpVector, cf.LookVector
 	local trace = r.X + u.Y + l.Z
@@ -2095,7 +2170,6 @@ local function interpolateCFrame(a: CF, b: CF, alpha: number): any
 	return CFrame.lookAt(np, vector_create(np.X - look.X, np.Y - look.Y, np.Z - look.Z), up)
 end
 
--- ───────────── value classification ─────────────
 local function classify(value: any): string
 	local t = type(value)
 	if t == "number" then return "number" end
@@ -2114,7 +2188,6 @@ local function classify(value: any): string
 	return "other"
 end
 
--- ───────────── TweenInfo ─────────────
 local TweenInfo = {}
 TweenInfo.__index = TweenInfo
 
@@ -2141,17 +2214,13 @@ function TweenInfo.new(time: number?, style: any?, direction: any?,
 	}, TweenInfo)
 end
 
--- ───────────── registry + update loop ─────────────
 type TweenProp = { name: string, kind: string, target: any, start: any }
 
 local activeTweens: { any } = {}
-local stepConn: any = nil  -- the connection handle, if Connect returns one
-local stepping = false     -- whether our callback is logically attached
+local stepConn: any = nil
+local stepping = false
 local lastTick = 0
 
--- Detach the per-frame loop. The `stepping` flag is the source of truth:
--- even if this build's connection has no :Disconnect (or Connect returned
--- nothing), the callback below goes inert, so we never double-process.
 local function stopStepping()
 	if not stepping then
 		return
@@ -2196,7 +2265,6 @@ local function processTweens(dt: number)
 	end
 end
 
--- fired every frame by RunService.PostLocal while tweens are active
 local function onTweenStep()
 	if not stepping then
 		return
@@ -2219,7 +2287,6 @@ local function register(tween: any)
 	end
 end
 
--- ───────────── Tween ─────────────
 local Tween = {}
 Tween.__index = Tween
 
@@ -2401,7 +2468,6 @@ function Tween._step(self: any, dt: number): boolean
 	return true
 end
 
--- ───────────── public API ─────────────
 local TweenService = {}
 TweenService.TweenInfo = TweenInfo
 
