@@ -759,6 +759,7 @@ local memory_readvector = memory.readvector
 local memory_readstring = memory.readstring
 
 local memory_writeu8     = memory.writeu8
+local memory_writeu32    = memory.writeu32
 local memory_writei32    = memory.writei32
 local memory_writeu64    = memory.writeu64
 local memory_writef32    = memory.writef32
@@ -1004,38 +1005,97 @@ local function declarePrimitiveFlag(name: string, mask: number)
 	} })
 end
 
+local ColorSequenceKeypoint = {}
+ColorSequenceKeypoint.__index = ColorSequenceKeypoint
+function ColorSequenceKeypoint.new(time: number, color: any): any
+	return setmetatable({ Time = time, Value = color }, ColorSequenceKeypoint)
+end
+
+local ColorSequence = {}
+ColorSequence.__index = ColorSequence
+function ColorSequence.new(a: any, b: any): any
+	local kps
+	if type(a) == "table" and a[1] ~= nil then
+		kps = a
+	elseif b ~= nil then
+		kps = { ColorSequenceKeypoint.new(0, a), ColorSequenceKeypoint.new(1, b) }
+	else
+		kps = { ColorSequenceKeypoint.new(0, a), ColorSequenceKeypoint.new(1, a) }
+	end
+	return setmetatable({ Keypoints = kps }, ColorSequence)
+end
+
+local NumberSequenceKeypoint = {}
+NumberSequenceKeypoint.__index = NumberSequenceKeypoint
+function NumberSequenceKeypoint.new(time: number, value: number, envelope: number?): any
+	return setmetatable({ Time = time, Value = value, Envelope = envelope or 0 }, NumberSequenceKeypoint)
+end
+
+local NumberSequence = {}
+NumberSequence.__index = NumberSequence
+function NumberSequence.new(a: any, b: any): any
+	local kps
+	if type(a) == "table" and a[1] ~= nil then
+		kps = a
+	elseif b ~= nil then
+		kps = { NumberSequenceKeypoint.new(0, a), NumberSequenceKeypoint.new(1, b) }
+	else
+		kps = { NumberSequenceKeypoint.new(0, a), NumberSequenceKeypoint.new(1, a) }
+	end
+	return setmetatable({ Keypoints = kps }, NumberSequence)
+end
+
+_G.ColorSequence = ColorSequence
+_G.ColorSequenceKeypoint = ColorSequenceKeypoint
+_G.NumberSequence = NumberSequence
+_G.NumberSequenceKeypoint = NumberSequenceKeypoint
+
 local COLOR_STRIDE = 20
 local NUMBER_STRIDE = 12
 
-local function readColorSeq(self: any, seqOff: number)
-	local count = memory_readu32(self, seqOff + 8)
-	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
-	local out = table.create(count)
-	for i = 0, count - 1 do
-		local o = i * COLOR_STRIDE
-		out[i + 1] = {
-			Time = memory_readf32(arr, o),
-			Color = Color3_new(
-				memory_readf32(arr, o + 4),
-				memory_readf32(arr, o + 8),
-				memory_readf32(arr, o + 12)),
-		}
-	end
-	return out
+local function isSequenceCount(count: number): boolean
+	return count > 1 and count < 100
 end
 
-local function readNumberSeq(self: any, seqOff: number)
+local function keypointsOf(value: any): { any }?
+	if type(value) ~= "table" then
+		return nil
+	end
+	local kps = value.Keypoints or value
+	if type(kps) == "table" and type(kps[1]) == "table" and kps[1].Time ~= nil then
+		return kps
+	end
+	return nil
+end
+
+local function readColorSeq(self: any, seqOff: number): any
 	local count = memory_readu32(self, seqOff + 8)
 	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
-	local out = table.create(count)
+	local kps = table.create(count)
+	for i = 0, count - 1 do
+		local o = i * COLOR_STRIDE
+		kps[i + 1] = ColorSequenceKeypoint.new(
+			memory_readf32(arr, o),
+			Color3_new(
+				memory_readf32(arr, o + 4),
+				memory_readf32(arr, o + 8),
+				memory_readf32(arr, o + 12)))
+	end
+	return setmetatable({ Keypoints = kps }, ColorSequence)
+end
+
+local function readNumberSeq(self: any, seqOff: number): any
+	local count = memory_readu32(self, seqOff + 8)
+	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
+	local kps = table.create(count)
 	for i = 0, count - 1 do
 		local o = i * NUMBER_STRIDE
-		out[i + 1] = {
-			Time = memory_readf32(arr, o),
-			Value = memory_readf32(arr, o + 4),
-		}
+		kps[i + 1] = NumberSequenceKeypoint.new(
+			memory_readf32(arr, o),
+			memory_readf32(arr, o + 4),
+			memory_readf32(arr, o + 8))
 	end
-	return out
+	return setmetatable({ Keypoints = kps }, NumberSequence)
 end
 
 local function writeColorSeqSolid(self: any, seqOff: number, c: vector)
@@ -1062,11 +1122,16 @@ local function writeColorSeqKeypoints(self: any, seqOff: number, kps: { any })
 	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
 	local n = math_min(count, #kps)
 	for i = 1, n do
-		local c = toColorVector(kps[i].Color)
+		local kp = kps[i]
 		local o = (i - 1) * COLOR_STRIDE
+		memory_writef32(arr, o, kp.Time)
+		local c = toColorVector(kp.Value)
 		memory_writef32(arr, o + 4, c.X)
 		memory_writef32(arr, o + 8, c.Y)
 		memory_writef32(arr, o + 12, c.Z)
+	end
+	if n < count then
+		memory_writeu32(self, seqOff + 8, n)
 	end
 end
 
@@ -1075,16 +1140,15 @@ local function writeNumberSeqKeypoints(self: any, seqOff: number, kps: { any })
 	local arr = pointer_to_userdata(memory_readu64(self, seqOff))
 	local n = math_min(count, #kps)
 	for i = 1, n do
-		memory_writef32(arr, (i - 1) * NUMBER_STRIDE + 4, kps[i].Value)
+		local kp = kps[i]
+		local o = (i - 1) * NUMBER_STRIDE
+		memory_writef32(arr, o, kp.Time)
+		memory_writef32(arr, o + 4, kp.Value)
+		memory_writef32(arr, o + 8, kp.Envelope or 0)
 	end
-end
-
-local function isColorKeypointArray(value: any): boolean
-	return type(value) == "table" and type(value[1]) == "table" and value[1].Color ~= nil
-end
-
-local function isNumberKeypointArray(value: any): boolean
-	return type(value) == "table" and type(value[1]) == "table" and value[1].Value ~= nil
+	if n < count then
+		memory_writeu32(self, seqOff + 8, n)
+	end
 end
 
 local function declareSequenceColor(class: string, seqField: string, plainField: string)
@@ -1092,21 +1156,23 @@ local function declareSequenceColor(class: string, seqField: string, plainField:
 	local plainOff = O(class, plainField)
 	declare({ class = class, name = plainField, callback = {
 		get = function(self: any): any
-			local count = memory_readu32(self, seqOff + 8)
-			if count > 1 and count < 100 then
+			if isSequenceCount(memory_readu32(self, seqOff + 8)) then
 				return readColorSeq(self, seqOff)
 			end
 			local r = memory_readvector(self, plainOff)
 			return Color3_new(r.X, r.Y, r.Z)
 		end,
 		set = function(self: any, value: any)
-			local count = memory_readu32(self, seqOff + 8)
-			if count > 1 and count < 100 then
-				if isColorKeypointArray(value) then
-					writeColorSeqKeypoints(self, seqOff, value)
+			local kps = keypointsOf(value)
+			local isSeq = isSequenceCount(memory_readu32(self, seqOff + 8))
+			if kps ~= nil then
+				if isSeq then
+					writeColorSeqKeypoints(self, seqOff, kps)
 				else
-					writeColorSeqSolid(self, seqOff, toColorVector(value))
+					memory_writevector(self, plainOff, toColorVector(kps[1].Value))
 				end
+			elseif isSeq then
+				writeColorSeqSolid(self, seqOff, toColorVector(value))
 			else
 				memory_writevector(self, plainOff, toColorVector(value))
 			end
@@ -1119,20 +1185,22 @@ local function declareSequenceNumber(class: string, seqField: string, plainField
 	local plainOff = O(class, plainField)
 	declare({ class = class, name = plainField, callback = {
 		get = function(self: any): any
-			local count = memory_readu32(self, seqOff + 8)
-			if count > 1 and count < 100 then
+			if isSequenceCount(memory_readu32(self, seqOff + 8)) then
 				return readNumberSeq(self, seqOff)
 			end
 			return memory_readf32(self, plainOff)
 		end,
 		set = function(self: any, value: any)
-			local count = memory_readu32(self, seqOff + 8)
-			if count > 1 and count < 100 then
-				if isNumberKeypointArray(value) then
-					writeNumberSeqKeypoints(self, seqOff, value)
+			local kps = keypointsOf(value)
+			local isSeq = isSequenceCount(memory_readu32(self, seqOff + 8))
+			if kps ~= nil then
+				if isSeq then
+					writeNumberSeqKeypoints(self, seqOff, kps)
 				else
-					writeNumberSeqSolid(self, seqOff, value)
+					memory_writef32(self, plainOff, kps[1].Value)
 				end
+			elseif isSeq then
+				writeNumberSeqSolid(self, seqOff, value)
 			else
 				memory_writef32(self, plainOff, value)
 			end
